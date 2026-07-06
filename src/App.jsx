@@ -9,6 +9,7 @@ import {
 import KioskView from './KioskView.jsx';
 import MembersManager from './MembersManager.jsx';
 import GoogleCalendarPanel from './GoogleCalendarPanel.jsx';
+import PointAdjuster from './PointAdjuster.jsx';
 
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
@@ -25,6 +26,7 @@ export default function App() {
   const [rewards, setRewards] = useState([]);
   const [completions, setCompletions] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
+  const [adjustments, setAdjustments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -38,7 +40,11 @@ export default function App() {
   const [selectedDay, setSelectedDay] = useState(null);
 
   const [showEventModal, setShowEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [editingReward, setEditingReward] = useState(null);
   const [showImport, setShowImport] = useState(false);
 
   // ---- first run: seed database if empty, then subscribe ----
@@ -60,7 +66,8 @@ export default function App() {
     const un4 = listenList('rewards', setRewards);
     const un5 = listenList('completions', setCompletions);
     const un6 = listenList('redemptions', setRedemptions);
-    return () => { un1(); un2(); un3(); un4(); un5(); un6(); };
+    const un7 = listenList('adjustments', setAdjustments);
+    return () => { un1(); un2(); un3(); un4(); un5(); un6(); un7(); };
   }, []);
 
   function togglePerson(id) {
@@ -68,12 +75,14 @@ export default function App() {
   }
   function personColor(id) { const p = people.find((p) => p.id === id); return p ? p.color : 'var(--chalk-faint)'; }
   function personObj(id) { return people.find((p) => p.id === id); }
+  function openEditEvent(e) { setEditingEvent(e); setShowEventModal(true); }
+  function openEditTask(t) { setEditingTask(t); setShowTaskModal(true); }
 
   function visibleForEvent(ev) {
     if (!ev.personIds || ev.personIds.length === 0) return true;
     return ev.personIds.some((id) => selectedPersons.includes(id));
   }
-  function visibleForTask(t) { return t.personIds.some((id) => selectedPersons.includes(id)); }
+  function visibleForTask(t) { return (t.personIds || []).some((id) => selectedPersons.includes(id)); }
 
   const visibleEvents = useMemo(() => events.filter(visibleForEvent), [events, selectedPersons]);
   const visibleTasks = useMemo(() => tasks.filter(visibleForTask), [tasks, selectedPersons]);
@@ -97,7 +106,8 @@ export default function App() {
   function pointsBalance(personId) {
     const earned = completions.filter((c) => c.personId === personId).reduce((s, c) => s + c.points, 0);
     const spent = redemptions.filter((r) => r.personId === personId).reduce((s, r) => s + r.cost, 0);
-    return earned - spent;
+    const adjusted = adjustments.filter((a) => a.personId === personId).reduce((s, a) => s + a.delta, 0);
+    return earned - spent + adjusted;
   }
   function redeem(reward, personId) {
     if (pointsBalance(personId) < reward.cost) return;
@@ -153,7 +163,7 @@ export default function App() {
 
   function PersonDots({ ids }) {
     return <span style={{ display: 'flex', gap: 3 }}>
-      {ids.map((id) => <span key={id} className="mc-dot" style={{ background: personColor(id) }}></span>)}
+      {(ids || []).map((id) => <span key={id} className="mc-dot" style={{ background: personColor(id) }}></span>)}
     </span>;
   }
 
@@ -167,27 +177,31 @@ export default function App() {
           <div className="day-section-title">📅 Termine</div>
           {evs.length === 0 && <div className="empty-note">Keine Termine an diesem Tag.</div>}
           {evs.map((e) => (
-            <div className="event-row" style={{ '--dot': e.type === 'special' ? 'var(--coral)' : 'var(--p1)' }} key={e.id}>
+            <div className="event-row" style={{ '--dot': e.type === 'special' ? 'var(--coral)' : 'var(--p1)', cursor: isAdmin ? 'pointer' : 'default' }}
+              key={e.id} onClick={() => isAdmin && openEditEvent(e)}>
               <span className="time">{e.time || '–'}</span>
               <span className="name">{e.title}</span>
               <PersonDots ids={e.personIds} />
               <span className={'tag ' + (e.type === 'special' ? 'tag-special' : 'tag-recurring')}>{e.type === 'special' ? 'Sonder' : 'Fest'}</span>
-              {e.source === 'google' && <span className="tag" title="Aus Google importiert">G</span>}
-              {isAdmin && <button className="row-del" onClick={() => removeItem('events', e.id)}>✕</button>}
+              {e.source === 'google' && <span className="tag" title="Aus Google importiert">G{e.manualOverride ? ' 🔒' : ''}</span>}
+              {isAdmin && <button className="row-del" onClick={(ev) => { ev.stopPropagation(); removeItem('events', e.id); }}>✕</button>}
             </div>
           ))}
         </div>}
         {(mode === 'chores' || mode === 'both') && <div style={{ marginTop: 10 }}>
           <div className="day-section-title">✅ Aufgaben</div>
           {tks.length === 0 && <div className="empty-note">Keine Aufgaben an diesem Tag.</div>}
-          {tks.map((t) => t.personIds.filter((pid) => selectedPersons.includes(pid)).map((pid) => {
+          {tks.map((t) => (t.personIds || []).filter((pid) => selectedPersons.includes(pid)).map((pid) => {
             const done = isDone(t.id, pid, key);
             const person = personObj(pid);
             if (!person) return null;
             return (
               <div className={'task-row' + (done ? ' done' : '')} style={{ '--dot': person.color }} key={t.id + pid}>
                 <input type="checkbox" checked={done} onChange={() => toggleTask(t, pid, current)} />
-                <span className="name">{t.title} <span style={{ color: 'var(--chalk-faint)', fontWeight: 400 }}>· {person.name}</span></span>
+                <span className="task-icon">{t.icon || '✅'}</span>
+                <span className="name" style={{ cursor: isAdmin ? 'pointer' : 'default' }} onClick={() => isAdmin && openEditTask(t)}>
+                  {t.title} <span style={{ color: 'var(--chalk-faint)', fontWeight: 400 }}>· {person.name}</span>
+                </span>
                 <span className="pts">+{t.points}</span>
                 {isAdmin && <button className="row-del" onClick={() => removeItem('tasks', t.id)}>✕</button>}
               </div>
@@ -218,14 +232,14 @@ export default function App() {
                   {e.time && <span className="mono">{e.time}</span>} {e.title}
                 </div>
               ))}
-              {(mode === 'chores' || mode === 'both') && tks.flatMap((t) => t.personIds.filter((pid) => selectedPersons.includes(pid)).map((pid) => {
+              {(mode === 'chores' || mode === 'both') && tks.flatMap((t) => (t.personIds || []).filter((pid) => selectedPersons.includes(pid)).map((pid) => {
                 const done = isDone(t.id, pid, key);
                 const person = personObj(pid);
                 if (!person) return null;
                 return (
                   <label className={'mini-item' + (done ? ' done' : '')} style={{ '--dot': person.color }} key={t.id + pid}>
                     <input type="checkbox" checked={done} onChange={() => toggleTask(t, pid, dt)} />
-                    <span>{t.title} <span className="mini-item-person">· {person.name}</span></span>
+                    <span>{t.icon || '✅'} {t.title} <span className="mini-item-person">· {person.name}</span></span>
                   </label>
                 );
               }))}
@@ -250,7 +264,7 @@ export default function App() {
             const key = dkey(dt);
             const inMonth = dt.getMonth() === current.getMonth();
             const evs = eventsOn(key);
-            const tks = tasksOn(dt).flatMap((t) => t.personIds.filter((pid) => selectedPersons.includes(pid)));
+            const tks = tasksOn(dt).flatMap((t) => (t.personIds || []).filter((pid) => selectedPersons.includes(pid)));
             const showEv = mode === 'calendar' || mode === 'both';
             const showCh = mode === 'chores' || mode === 'both';
             return (
@@ -285,13 +299,14 @@ export default function App() {
               <span className="time">{e.time || '–'}</span><span className="name">{e.title}</span>
             </div>
           ))}
-          {(mode === 'chores' || mode === 'both') && tks.flatMap((t) => t.personIds.filter((pid) => selectedPersons.includes(pid)).map((pid) => {
+          {(mode === 'chores' || mode === 'both') && tks.flatMap((t) => (t.personIds || []).filter((pid) => selectedPersons.includes(pid)).map((pid) => {
             const done = isDone(t.id, pid, key);
             const person = personObj(pid);
             if (!person) return null;
             return (
               <div className={'task-row' + (done ? ' done' : '')} style={{ '--dot': person.color }} key={t.id + pid}>
                 <input type="checkbox" checked={done} onChange={() => toggleTask(t, pid, dt)} />
+                <span className="task-icon">{t.icon || '✅'}</span>
                 <span className="name">{t.title} · {person.name}</span><span className="pts">+{t.points}</span>
               </div>
             );
@@ -339,8 +354,8 @@ export default function App() {
         <div style={{ display: 'flex', gap: 8 }}>
           {isAdmin ? (
             <>
-              <button className="icon-btn" onClick={() => setShowEventModal(true)}>+ Termin</button>
-              <button className="icon-btn" onClick={() => setShowTaskModal(true)}>+ Aufgabe</button>
+              <button className="icon-btn" onClick={() => { setEditingEvent(null); setShowEventModal(true); }}>+ Termin</button>
+              <button className="icon-btn" onClick={() => { setEditingTask(null); setShowTaskModal(true); }}>+ Aufgabe</button>
               <button className="icon-btn" onClick={() => setShowImport(true)}>⇩ Google-Import</button>
               <button className="icon-btn" onClick={() => setShowKioskModal(true)}>🖥️ Kiosk-Modus</button>
               <button className="icon-btn" onClick={() => setIsAdmin(false)}>Admin: An 🔓</button>
@@ -406,9 +421,16 @@ export default function App() {
             ))}
           </div>
 
+          {isAdmin && <PointAdjuster people={people} />}
+
           <div className="card">
-            <h3>🎁 Prämien</h3>
-            <RewardRedeemer people={people} rewards={rewards} pointsBalance={pointsBalance} redeem={redeem} isAdmin={isAdmin} />
+            <h3 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>🎁 Prämien</span>
+              {isAdmin && <button className="icon-btn" style={{ padding: '5px 10px', fontSize: 11 }}
+                onClick={() => { setEditingReward(null); setShowRewardModal(true); }}>+ Neu</button>}
+            </h3>
+            <RewardRedeemer people={people} rewards={rewards} pointsBalance={pointsBalance} redeem={redeem} isAdmin={isAdmin}
+              onEdit={(r) => { setEditingReward(r); setShowRewardModal(true); }} />
           </div>
 
           <div className="card">
@@ -421,30 +443,62 @@ export default function App() {
         </div>
       </div>
 
-      {showEventModal && <EventModal people={people}
-        onClose={() => setShowEventModal(false)}
-        onSave={(ev) => { pushItem('events', ev); setShowEventModal(false); }} />}
-      {showTaskModal && <TaskModal people={people}
-        onClose={() => setShowTaskModal(false)}
-        onSave={(t) => { pushItem('tasks', t); setShowTaskModal(false); }} />}
+      {showEventModal && <EventModal people={people} existing={editingEvent}
+        onClose={() => { setShowEventModal(false); setEditingEvent(null); }}
+        onSave={(ev) => {
+          if (editingEvent) updateItem('events', editingEvent.id, ev);
+          else pushItem('events', ev);
+          setShowEventModal(false); setEditingEvent(null);
+        }}
+        onExclude={editingEvent && editingEvent.source === 'google' ? () => {
+          setItem('googleExcluded', editingEvent.id, true);
+          removeItem('events', editingEvent.id);
+          setShowEventModal(false); setEditingEvent(null);
+        } : null}
+      />}
+      {showTaskModal && <TaskModal people={people} existing={editingTask}
+        onClose={() => { setShowTaskModal(false); setEditingTask(null); }}
+        onSave={(t) => {
+          if (editingTask) updateItem('tasks', editingTask.id, t);
+          else pushItem('tasks', t);
+          setShowTaskModal(false); setEditingTask(null);
+        }} />}
       {showImport && <ImportModal icsText={icsText} setIcsText={setIcsText} onClose={() => setShowImport(false)} onImport={doImport} />}
+      {showRewardModal && <RewardModal existing={editingReward}
+        onClose={() => { setShowRewardModal(false); setEditingReward(null); }}
+        onSave={(r) => {
+          if (editingReward) updateItem('rewards', editingReward.id, r);
+          else pushItem('rewards', r);
+          setShowRewardModal(false); setEditingReward(null);
+        }} />}
       {showPinModal && <PinModal onClose={() => setShowPinModal(false)} onSubmit={tryUnlockAdmin} />}
-      {showKioskModal && <KioskQrModal onClose={() => setShowKioskModal(false)} />}
+      {showKioskModal && <KioskQrModal onClose={() => setShowKioskModal(false)} people={people} />}
     </div>
   );
 }
 
-function KioskQrModal({ onClose }) {
-  const kioskUrl = `${window.location.origin}${window.location.pathname}?kiosk=1`;
+function KioskQrModal({ onClose, people }) {
+  const [selected, setSelected] = useState(people.map((p) => p.id));
+  function toggle(id) { setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
+  const allSelected = selected.length === people.length;
+  const base = `${window.location.origin}${window.location.pathname}?kiosk=1`;
+  const kioskUrl = allSelected ? base : `${base}&people=${selected.join(',')}`;
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-x" onClick={onClose}>✕</button>
         <h3>Kiosk-Modus</h3>
         <div className="help-text" style={{ marginBottom: 12 }}>
-          Scanne den QR-Code mit einem Tablet oder Handy in der Küche, um die
-          vereinfachte Vollbild-Ansicht (nur heutige Termine &amp; Aufgaben, große Schrift,
-          kein Admin-Zugang) direkt zu öffnen.
+          Wähle, wessen Termine &amp; Aufgaben in dieser Kiosk-Ansicht erscheinen
+          sollen (z. B. nur Tim, oder Tim + Liz für ein Kinderzimmer-Tablet).
+          Scanne danach den QR-Code mit dem jeweiligen Tablet.
+        </div>
+        <div className="person-pick" style={{ marginBottom: 14 }}>
+          {people.map((p) => (
+            <div key={p.id} className={'chip' + (selected.includes(p.id) ? ' active' : '')} style={{ '--dot': p.color }} onClick={() => toggle(p.id)}>
+              <span className="dot"></span>{p.name}
+            </div>
+          ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', background: 'var(--chalk)', padding: 16, borderRadius: 12 }}>
           <QRCodeCanvas value={kioskUrl} size={200} />
@@ -452,7 +506,7 @@ function KioskQrModal({ onClose }) {
         <div className="help-text" style={{ marginTop: 12, wordBreak: 'break-all' }}>{kioskUrl}</div>
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>Schließen</button>
-          <button className="btn-primary" onClick={() => window.open(kioskUrl, '_blank')}>In neuem Tab öffnen</button>
+          <button className="btn-primary" disabled={selected.length === 0} onClick={() => window.open(kioskUrl, '_blank')}>In neuem Tab öffnen</button>
         </div>
       </div>
     </div>
@@ -479,7 +533,7 @@ function PinModal({ onClose, onSubmit }) {
   );
 }
 
-function RewardRedeemer({ people, rewards, pointsBalance, redeem, isAdmin }) {
+function RewardRedeemer({ people, rewards, pointsBalance, redeem, isAdmin, onEdit }) {
   const [personId, setPersonId] = useState('');
   useEffect(() => { if (!personId && people.length) setPersonId(people[0].id); }, [people]);
   if (!people.length) return <div className="empty-note">Noch keine Familienmitglieder.</div>;
@@ -490,9 +544,10 @@ function RewardRedeemer({ people, rewards, pointsBalance, redeem, isAdmin }) {
           {people.map((p) => <option key={p.id} value={p.id}>{p.name} ({pointsBalance(p.id)} Pkt.)</option>)}
         </select>
       </div>
+      {rewards.length === 0 && <div className="empty-note">Noch keine Prämien angelegt.</div>}
       {rewards.map((r) => (
         <div className="reward" key={r.id}>
-          <div className="rname">{r.name}</div>
+          <div className="rname" style={{ cursor: isAdmin ? 'pointer' : 'default' }} onClick={() => isAdmin && onEdit(r)}>{r.name}</div>
           <div className="rcost mono">{r.cost}</div>
           <button disabled={pointsBalance(personId) < r.cost} onClick={() => redeem(r, personId)}>Einlösen</button>
           {isAdmin && <button className="row-del" onClick={() => removeItem('rewards', r.id)}>✕</button>}
@@ -502,18 +557,46 @@ function RewardRedeemer({ people, rewards, pointsBalance, redeem, isAdmin }) {
   );
 }
 
-function EventModal({ people, onClose, onSave }) {
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState(dkey(new Date()));
-  const [time, setTime] = useState('');
-  const [type, setType] = useState('special');
-  const [personIds, setPersonIds] = useState([]);
+function RewardModal({ existing, onClose, onSave }) {
+  const [name, setName] = useState(existing?.name || '');
+  const [cost, setCost] = useState(existing?.cost ?? 50);
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <button className="close-x" onClick={onClose}>✕</button>
+        <h3>{existing ? 'Prämie bearbeiten' : 'Neue Prämie'}</h3>
+        <div className="field"><label>Bezeichnung</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Kinobesuch" /></div>
+        <div className="field"><label>Punkte-Kosten</label><input type="number" min="1" value={cost} onChange={(e) => setCost(parseInt(e.target.value || 0))} /></div>
+        <div className="modal-actions">
+          <button className="btn-ghost" onClick={onClose}>Abbrechen</button>
+          <button className="btn-primary" disabled={!name.trim() || !cost} onClick={() => onSave({ name: name.trim(), cost: Number(cost) })}>Speichern</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EventModal({ people, onClose, onSave, onExclude, existing }) {
+  const [title, setTitle] = useState(existing?.title || '');
+  const [date, setDate] = useState(existing?.date || dkey(new Date()));
+  const [time, setTime] = useState(existing?.time || '');
+  const [type, setType] = useState(existing?.type || 'special');
+  const [personIds, setPersonIds] = useState(existing?.personIds || []);
+  const [locked, setLocked] = useState(existing?.manualOverride || false);
+  const isGoogle = existing?.source === 'google';
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-x" onClick={onClose}>✕</button>
-        <h3>Neuer Termin</h3>
+        <h3>{existing ? 'Termin bearbeiten' : 'Neuer Termin'}</h3>
+        {isGoogle && (
+          <div className="help-text" style={{ marginBottom: 10 }}>
+            Dieser Termin stammt aus einem verbundenen Google-Kalender und wird
+            alle 15 Minuten automatisch aktualisiert. Aktiviere "Sperren", damit
+            deine Änderungen dabei nicht überschrieben werden.
+          </div>
+        )}
         <div className="field"><label>Titel</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. Zahnarzt" /></div>
         <div className="field row">
           <div><label>Datum</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
@@ -536,28 +619,54 @@ function EventModal({ people, onClose, onSave }) {
             ))}
           </div>
         </div>
+        {isGoogle && (
+          <label className="checkbox-row">
+            <input type="checkbox" checked={locked} onChange={(e) => setLocked(e.target.checked)} />
+            🔒 Sperren (nicht bei nächster Google-Synchronisation überschreiben)
+          </label>
+        )}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>Abbrechen</button>
-          <button className="btn-primary" disabled={!title} onClick={() => onSave({ title, date, time, type, personIds, source: 'local' })}>Speichern</button>
+          <button className="btn-primary" disabled={!title}
+            onClick={() => onSave({ title, date, time, type, personIds, source: existing?.source || 'local', manualOverride: locked })}>
+            Speichern
+          </button>
         </div>
+        {onExclude && (
+          <button className="btn-ghost danger" style={{ marginTop: 10 }} onClick={onExclude}>
+            🚫 Dauerhaft entfernen &amp; aus Google-Sync ausschließen
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-function TaskModal({ people, onClose, onSave }) {
-  const [title, setTitle] = useState('');
-  const [points, setPoints] = useState(10);
-  const [freq, setFreq] = useState('daily');
-  const [dueDate, setDueDate] = useState(dkey(new Date()));
-  const [personIds, setPersonIds] = useState([]);
+const ICON_PRESETS = ['🦷', '🛏️', '🍽️', '🧹', '♻️', '📦', '👕', '🐕', '🌱', '📚', '🧺', '🛁', '🚗', '🗑️', '✅'];
+
+function TaskModal({ people, onClose, onSave, existing }) {
+  const [title, setTitle] = useState(existing?.title || '');
+  const [points, setPoints] = useState(existing?.points ?? 10);
+  const [freq, setFreq] = useState(existing?.freq || 'daily');
+  const [dueDate, setDueDate] = useState(existing?.dueDate || dkey(new Date()));
+  const [personIds, setPersonIds] = useState(existing?.personIds || []);
+  const [icon, setIcon] = useState(existing?.icon || '✅');
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-x" onClick={onClose}>✕</button>
-        <h3>Neue Aufgabe</h3>
+        <h3>{existing ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}</h3>
         <div className="field"><label>Titel</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. Zimmer aufräumen" /></div>
+        <div className="field">
+          <label>Icon</label>
+          <div className="icon-pick">
+            {ICON_PRESETS.map((ic) => (
+              <button type="button" key={ic} className={'icon-choice' + (icon === ic ? ' active' : '')} onClick={() => setIcon(ic)}>{ic}</button>
+            ))}
+            <input type="text" className="icon-custom" value={icon} onChange={(e) => setIcon(e.target.value)} maxLength={4} />
+          </div>
+        </div>
         <div className="field row">
           <div><label>Punkte</label><input type="number" value={points} onChange={(e) => setPoints(parseInt(e.target.value || 0))} /></div>
           <div>
@@ -582,7 +691,7 @@ function TaskModal({ people, onClose, onSave }) {
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>Abbrechen</button>
           <button className="btn-primary" disabled={!title || personIds.length === 0}
-            onClick={() => onSave({ title, points, freq, dueDate: freq === 'once' ? dueDate : null, personIds })}>Speichern</button>
+            onClick={() => onSave({ title, points, freq, dueDate: freq === 'once' ? dueDate : null, personIds, icon })}>Speichern</button>
         </div>
       </div>
     </div>

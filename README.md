@@ -11,17 +11,65 @@ gehostet auf GitHub Pages.
 - Standard- vs. Sondertermine
 - Tägliche Routineaufgaben (automatischer Reset pro Kalendertag) und einmalige Aufgaben
 - Punktesystem pro Person + einlösbare Prämien
-- Google-Kalender-Import per ICS-Text-Einfügen (Export aus Google Kalender → Datei öffnen → Inhalt einfügen)
-- Admin-PIN schaltet das Anlegen/Löschen von Terminen, Aufgaben und Prämien frei;
-  Abhaken und Prämien einlösen geht immer, ohne PIN
-- **Familie verwalten** (im Admin-Modus, in der rechten Seitenleiste): Namen der
-  Familienmitglieder direkt umbenennen oder neue hinzufügen
-- **Kiosk-Modus**: Admin-Button "🖥️ Kiosk-Modus" zeigt einen QR-Code, der eine
-  vereinfachte Vollbild-Ansicht öffnet (nur heutige Termine & Aufgaben, große
-  Schrift, kein Admin-Zugriff) – ideal für ein Tablet in der Küche
-- Eigenes App-Icon (Klemmbrett mit Punkte-Münze) für Homescreen/Manifest
+- **Punkte manuell anpassen** (Admin-Seitenleiste "⚖️ Punkte anpassen") – z. B. für
+  Sonderboni oder Korrekturen, unabhängig vom Abhaken
+- **Termine & Aufgaben bearbeiten**: im Admin-Modus auf einen Termin/eine Aufgabe
+  klicken öffnet den Bearbeiten-Dialog (statt nur Löschen)
+- Google-Kalender-Import per ICS-Text-Einfügen, sowie **echte OAuth-Anbindung**
+  mehrerer Google-Konten (siehe eigener Abschnitt unten) – editierbare/sperrbare
+  Google-Termine, damit manuelle Änderungen nicht beim nächsten Sync überschrieben werden
+- Admin-PIN schaltet das Anlegen/Löschen/Bearbeiten frei; Abhaken und Prämien
+  einlösen geht immer, ohne PIN
+- **Familie verwalten**: Namen der Familienmitglieder umbenennen oder neue hinzufügen
+- **Aufgaben-Icons**: jede Aufgabe hat ein Emoji-Icon (frei wählbar), damit auch
+  Kinder, die noch nicht lesen können, die Aufgaben erkennen
+- **Kiosk-Modus mit Personen-Auswahl**: QR-Code für die komplette Familie oder
+  für eine Auswahl (z. B. nur Tim, oder Tim + Liz) – ideal für ein Tablet im Kinderzimmer
+- Eigenes App-Icon für Homescreen/Manifest
+- Design im Stil von Structured.app: helles Theme, farbige abgerundete Karten,
+  Zeitleisten-Optik in der Tagesansicht
 
-## Google-Kalender direkt verbinden (mehrere Konten)
+## Punkte manuell anpassen
+
+Admin-Modus → Seitenleiste **⚖️ Punkte anpassen**: Person auswählen, Punktzahl
+und optional einen Grund eintragen, dann **+ Gutschreiben** oder **− Abziehen**.
+Wird sofort im Punktestand berücksichtigt, unabhängig von abgehakten Aufgaben.
+
+## Termine und Aufgaben bearbeiten
+
+Im Admin-Modus einfach auf einen Termin oder eine Aufgabe klicken (nicht auf
+die Checkbox oder das ✕) → der Bearbeiten-Dialog öffnet sich mit den aktuellen
+Werten vorausgefüllt.
+
+Bei Terminen, die aus einem verbundenen Google-Kalender stammen: Der Dialog
+zeigt einen Hinweis und eine Checkbox **🔒 Sperren**. Ohne Sperre überschreibt
+der nächste automatische Sync (alle 15 Minuten) deine Änderungen wieder mit dem
+Original aus Google. Mit Sperre bleiben deine Anpassungen erhalten. Über
+**🚫 Dauerhaft entfernen & aus Google-Sync ausschließen** verschwindet ein
+Google-Termin endgültig aus der Familientafel (z. B. für Termine, die euch
+nicht interessieren) – er wird auch bei künftigen Syncs nicht mehr importiert.
+
+## Aufgaben-Icons
+
+Beim Anlegen/Bearbeiten einer Aufgabe steht eine Auswahl gängiger Emoji-Icons
+zur Verfügung, oder ein eigenes Emoji lässt sich frei eintragen. Icons
+erscheinen in allen Ansichten sowie groß im Kiosk-Modus, damit auch Kinder,
+die noch nicht lesen können, ihre Aufgaben erkennen.
+
+## Kiosk-Modus einrichten
+
+1. Admin-Modus → **🖥️ Kiosk-Modus** klicken
+2. Familienmitglieder auswählen/abwählen, für die diese Kiosk-Ansicht gelten
+   soll (z. B. nur Tim, oder Tim + Liz für ein gemeinsames Kinderzimmer-Tablet;
+   alle ausgewählt = ganze Familie)
+3. QR-Code mit dem jeweiligen Tablet/Handy scannen, oder Link manuell öffnen
+4. Auf dem Tablet den Browser in den Vollbildmodus schalten bzw. die Seite zum
+   Homescreen hinzufügen, damit es wie eine eigene App aussieht
+
+Für unterschiedliche Tablets/Kinder einfach mehrmals mit unterschiedlicher
+Auswahl öffnen und den jeweiligen QR-Code auf dem passenden Gerät scannen.
+
+## Familienmitglieder umbenennen
 
 Jedes Familienmitglied kann sein eigenes Google-Konto verbinden; die Termine
 werden automatisch alle 15 Minuten abgeglichen und für alle sichtbar in die
@@ -65,23 +113,6 @@ Sondertermine (mit "G"-Kennzeichen) in allen Ansichten.
 
 Der bisherige ICS-Text-Import bleibt als Alternative bestehen, z. B. für
 Kalender, die nicht über ein Google-Konto laufen.
-
-## Familienmitglieder umbenennen
-
-1. Oben rechts auf **Admin 🔒** klicken, PIN eingeben
-2. In der rechten Seitenleiste erscheint die Karte **👪 Familie verwalten**
-3. Namen im Textfeld ändern (z. B. "Kind 2" → "Liz", "Mama" → "Tina", "Papa" → "Thomas")
-4. Bei jeder Zeile auf **Speichern** klicken (oder Enter drücken)
-
-Die Änderung wird sofort über Firebase an alle Geräte synchronisiert.
-
-## Kiosk-Modus einrichten
-
-1. Im Admin-Modus auf **🖥️ Kiosk-Modus** klicken
-2. QR-Code mit dem Tablet/Handy in der Küche scannen, oder Link manuell öffnen
-   (Format: `https://DEIN_USERNAME.github.io/Family-Planner/?kiosk=1`)
-3. Auf dem Tablet den Browser in den Vollbildmodus schalten bzw. die Seite zum
-   Homescreen hinzufügen, damit es wie eine eigene App aussieht
 
 ## 1. Lokal einrichten
 
@@ -152,18 +183,7 @@ npm run dev
 6. App ist danach erreichbar unter:
    `https://DEIN_USERNAME.github.io/Family-Planner-App/`
 
-## Funktionen
-
-- Ansichten: Nur Kalender / Nur Aufgaben / Beides × Tag / Woche / Monat / Jahr
-- Personenfilter mit Farben
-- Standard- vs. Sondertermine
-- Tägliche Routineaufgaben (automatischer Reset pro Kalendertag) und einmalige Aufgaben
-- Punktesystem pro Person + einlösbare Prämien
-- Google-Kalender-Import per ICS-Text-Einfügen (Export aus Google Kalender → Datei öffnen → Inhalt einfügen)
-- Admin-PIN schaltet das Anlegen/Löschen von Terminen, Aufgaben und Prämien frei;
-  Abhaken und Prämien einlösen geht immer, ohne PIN
-
 ## Mögliche nächste Ausbaustufen
 
 - Firebase Auth statt offener Schreibrechte
-- Echte Google-Calendar-API-Anbindung (OAuth) statt ICS-Import
+- Zeitlich präzise Minuten-Timeline (aktuell: Reihenfolge nach Uhrzeit, aber ohne exakte Positionierung nach Dauer)

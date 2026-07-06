@@ -29,6 +29,13 @@ export function removeItem(path, id) {
   return remove(ref(db, `${path}/${id}`));
 }
 
+// Reads a path and returns just its keys (used e.g. for the googleExcluded set,
+// which is a simple {id: true} map rather than a list of objects).
+export async function getKeys(path) {
+  const snap = await get(ref(db, path));
+  return snap.exists() ? Object.keys(snap.val()) : [];
+}
+
 // Writes seed data only if the path is still empty (first run).
 export async function seedIfEmpty(path, seedObject) {
   const snap = await get(ref(db, path));

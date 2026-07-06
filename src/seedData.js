@@ -19,12 +19,12 @@ export const SEED_EVENTS = {
 };
 
 export const SEED_TASKS = {
-  t1: { title: 'Zähne putzen', points: 5, freq: 'daily', personIds: ['tim', 'kind2'] },
-  t2: { title: 'Bett machen', points: 5, freq: 'daily', personIds: ['tim', 'kind2'] },
-  t3: { title: 'Spülmaschine ausräumen', points: 5, freq: 'daily', personIds: ['papa', 'mama', 'tim', 'kind2'] },
-  t4: { title: 'Zimmer aufräumen/saugen', points: 20, freq: 'daily', personIds: ['tim', 'kind2'] },
-  t5: { title: 'Altglas wegbringen', points: 10, freq: 'once', dueDate: d(2), personIds: ['papa'] },
-  t6: { title: 'Paket von der Post abholen', points: 10, freq: 'once', dueDate: d(0), personIds: ['mama'] },
+  t1: { title: 'Zähne putzen', points: 5, freq: 'daily', personIds: ['tim', 'kind2'], icon: '🦷' },
+  t2: { title: 'Bett machen', points: 5, freq: 'daily', personIds: ['tim', 'kind2'], icon: '🛏️' },
+  t3: { title: 'Spülmaschine ausräumen', points: 5, freq: 'daily', personIds: ['papa', 'mama', 'tim', 'kind2'], icon: '🍽️' },
+  t4: { title: 'Zimmer aufräumen/saugen', points: 20, freq: 'daily', personIds: ['tim', 'kind2'], icon: '🧹' },
+  t5: { title: 'Altglas wegbringen', points: 10, freq: 'once', dueDate: d(2), personIds: ['papa'], icon: '♻️' },
+  t6: { title: 'Paket von der Post abholen', points: 10, freq: 'once', dueDate: d(0), personIds: ['mama'], icon: '📦' },
 };
 
 export const SEED_REWARDS = {

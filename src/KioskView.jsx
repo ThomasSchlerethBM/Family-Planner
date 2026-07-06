@@ -3,10 +3,19 @@ import { removeItem, setItem } from './db';
 
 const today = new Date();
 
-export default function KioskView({ people, events, tasks, completions }) {
+function getKioskPeopleFilter() {
+  const raw = new URLSearchParams(window.location.search).get('people');
+  if (!raw) return null;
+  return raw.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+export default function KioskView({ people: allPeople, events, tasks, completions }) {
+  const filterIds = getKioskPeopleFilter();
+  const people = filterIds ? allPeople.filter((p) => filterIds.includes(p.id)) : allPeople;
   const key = dkey(today);
   const evs = events
     .filter((e) => e.date === key)
+    .filter((e) => !filterIds || !e.personIds || e.personIds.length === 0 || e.personIds.some((id) => filterIds.includes(id)))
     .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
   const tks = tasks.filter((t) => (t.freq === 'daily' ? true : t.dueDate === key));
 
@@ -43,7 +52,7 @@ export default function KioskView({ people, events, tasks, completions }) {
         <div className="kiosk-col">
           <div className="kiosk-section-title">✅ Aufgaben</div>
           {people.map((person) => {
-            const mine = tks.filter((t) => t.personIds.includes(person.id));
+            const mine = tks.filter((t) => (t.personIds || []).includes(person.id));
             if (mine.length === 0) return null;
             return (
               <div className="kiosk-person-block" key={person.id}>
@@ -53,7 +62,8 @@ export default function KioskView({ people, events, tasks, completions }) {
                   return (
                     <label key={t.id} className={'kiosk-task' + (done ? ' done' : '')} style={{ '--dot': person.color }}>
                       <input type="checkbox" checked={done} onChange={() => toggleTask(t, person.id)} />
-                      <span>{t.title}</span>
+                      <span className="kiosk-task-icon">{t.icon || '✅'}</span>
+                      <span className="kiosk-task-title">{t.title}</span>
                       <span className="kiosk-pts">+{t.points}</span>
                     </label>
                   );

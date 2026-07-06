@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { setItem, removeItem } from './db';
+import { setItem, removeItem, getKeys } from './db';
 import {
   connectGoogleCalendar, refreshGoogleToken, getStoredToken,
   isConnected, disconnectGoogleCalendar, fetchGoogleEvents,
@@ -54,13 +54,18 @@ export default function GoogleCalendarPanel({ people, events }) {
       const timeMin = new Date(Date.now() - SYNC_WINDOW_PAST_DAYS * 86400000).toISOString();
       const timeMax = new Date(Date.now() + SYNC_WINDOW_FUTURE_DAYS * 86400000).toISOString();
       const items = await fetchGoogleEvents(token, timeMin, timeMax);
+      const excludedIds = await getKeys('googleExcluded');
+      const lockedIds = new Set(events.filter((e) => e.manualOverride).map((e) => e.id));
 
       const freshIds = new Set();
       for (const it of items) {
+        const id = `google_${personId}_${it.id}`;
+        if (excludedIds.includes(id)) continue; // permanently removed by admin
+        freshIds.add(id);
+        if (lockedIds.has(id)) continue; // admin locked this one, keep local edits
+
         const { date, time } = toLocalDateParts(it, 'start');
         if (!date) continue;
-        const id = `google_${personId}_${it.id}`;
-        freshIds.add(id);
         await setItem('events', id, {
           title: it.summary || '(ohne Titel)',
           date, time,
