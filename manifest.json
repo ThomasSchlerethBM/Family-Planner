@@ -1,0 +1,10 @@
+{
+  "name": "Familientafel",
+  "short_name": "Familientafel",
+  "description": "Kalender & Aufgaben-Punktesystem für die ganze Familie",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1E3A34",
+  "theme_color": "#1E3A34",
+  "icons": []
+}
