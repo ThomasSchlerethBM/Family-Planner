@@ -12,7 +12,7 @@ import MembersManager from './MembersManager.jsx';
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
 // Einlösen braucht niemand die PIN.
-const ADMIN_PIN = '1234';
+const ADMIN_PIN = '51441081';
 
 const today = new Date();
 const isKioskUrl = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('kiosk') === '1';
