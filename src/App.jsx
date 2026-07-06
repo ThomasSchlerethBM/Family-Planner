@@ -1,17 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { listenList, pushItem, setItem, updateItem, removeItem, seedIfEmpty } from './db';
 import { SEED_MEMBERS, SEED_EVENTS, SEED_TASKS, SEED_REWARDS } from './seedData';
 import {
   DOW, MONTHS, dkey, sameDay, addDays, startOfWeek, startOfMonth,
   fmtLabelDay, fmtLabelWeek, fmtLabelMonth, completionKey,
 } from './dateUtils';
+import KioskView from './KioskView.jsx';
+import MembersManager from './MembersManager.jsx';
 
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
 // Einlösen braucht niemand die PIN.
-const ADMIN_PIN = '51441081';
+const ADMIN_PIN = '1234';
 
 const today = new Date();
+const isKioskUrl = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('kiosk') === '1';
 
 export default function App() {
   const [people, setPeople] = useState([]);
@@ -24,6 +28,7 @@ export default function App() {
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [showKioskModal, setShowKioskModal] = useState(false);
 
   const [mode, setMode] = useState('both');
   const [period, setPeriod] = useState('week');
@@ -143,6 +148,7 @@ export default function App() {
   }
 
   if (loading) return <div className="loading-screen">Lade Familientafel…</div>;
+  if (isKioskUrl) return <KioskView people={people} events={events} tasks={tasks} completions={completions} />;
 
   function PersonDots({ ids }) {
     return <span style={{ display: 'flex', gap: 3 }}>
@@ -218,7 +224,7 @@ export default function App() {
                 return (
                   <label className={'mini-item' + (done ? ' done' : '')} style={{ '--dot': person.color }} key={t.id + pid}>
                     <input type="checkbox" checked={done} onChange={() => toggleTask(t, pid, dt)} />
-                    {t.title}
+                    <span>{t.title} <span className="mini-item-person">· {person.name}</span></span>
                   </label>
                 );
               }))}
@@ -335,6 +341,7 @@ export default function App() {
               <button className="icon-btn" onClick={() => setShowEventModal(true)}>+ Termin</button>
               <button className="icon-btn" onClick={() => setShowTaskModal(true)}>+ Aufgabe</button>
               <button className="icon-btn" onClick={() => setShowImport(true)}>⇩ Google-Import</button>
+              <button className="icon-btn" onClick={() => setShowKioskModal(true)}>🖥️ Kiosk-Modus</button>
               <button className="icon-btn" onClick={() => setIsAdmin(false)}>Admin: An 🔓</button>
             </>
           ) : (
@@ -383,6 +390,8 @@ export default function App() {
         </div>
 
         <div className="sidebar">
+          {isAdmin && <MembersManager people={people} />}
+
           <div className="card">
             <h3>🪙 Punktestand</h3>
             {people.map((p) => (
@@ -417,6 +426,32 @@ export default function App() {
         onSave={(t) => { pushItem('tasks', t); setShowTaskModal(false); }} />}
       {showImport && <ImportModal icsText={icsText} setIcsText={setIcsText} onClose={() => setShowImport(false)} onImport={doImport} />}
       {showPinModal && <PinModal onClose={() => setShowPinModal(false)} onSubmit={tryUnlockAdmin} />}
+      {showKioskModal && <KioskQrModal onClose={() => setShowKioskModal(false)} />}
+    </div>
+  );
+}
+
+function KioskQrModal({ onClose }) {
+  const kioskUrl = `${window.location.origin}${window.location.pathname}?kiosk=1`;
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <button className="close-x" onClick={onClose}>✕</button>
+        <h3>Kiosk-Modus</h3>
+        <div className="help-text" style={{ marginBottom: 12 }}>
+          Scanne den QR-Code mit einem Tablet oder Handy in der Küche, um die
+          vereinfachte Vollbild-Ansicht (nur heutige Termine &amp; Aufgaben, große Schrift,
+          kein Admin-Zugang) direkt zu öffnen.
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', background: 'var(--chalk)', padding: 16, borderRadius: 12 }}>
+          <QRCodeCanvas value={kioskUrl} size={200} />
+        </div>
+        <div className="help-text" style={{ marginTop: 12, wordBreak: 'break-all' }}>{kioskUrl}</div>
+        <div className="modal-actions">
+          <button className="btn-ghost" onClick={onClose}>Schließen</button>
+          <button className="btn-primary" onClick={() => window.open(kioskUrl, '_blank')}>In neuem Tab öffnen</button>
+        </div>
+      </div>
     </div>
   );
 }

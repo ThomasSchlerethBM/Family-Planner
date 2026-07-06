@@ -6,5 +6,5 @@ import react from '@vitejs/plugin-react';
 // Wenn du lokal testest (npm run dev), ist das egal.
 export default defineConfig({
   plugins: [react()],
-  base: '/Family-Planner/',
+  base: '/Family-Planner-App/',
 });

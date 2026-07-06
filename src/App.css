@@ -141,5 +141,31 @@ body{
 
 .day-detail-list{display:flex; flex-direction:column; gap:6px; margin-top:8px;}
 
+.mini-item-person{color:var(--chalk-faint); font-weight:400;}
+
+.member-edit-row{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px dashed var(--line);}
+.member-edit-row input[type=text]{flex:1; background:var(--board-3); border:1px solid var(--line); color:var(--chalk); border-radius:8px; padding:6px 9px; font-family:'Nunito'; font-size:13px;}
+.member-add-row{display:flex; gap:8px; margin-top:8px;}
+.member-add-row input[type=text]{flex:1; background:var(--board-3); border:1px solid var(--line); color:var(--chalk); border-radius:8px; padding:6px 9px; font-family:'Nunito'; font-size:13px;}
+.btn-ghost.small{width:auto; padding:6px 10px; font-size:11.5px; white-space:nowrap;}
+
+/* KIOSK MODE */
+.kiosk{min-height:100vh; padding:32px 40px; background:var(--board);}
+.kiosk-header{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:28px; border-bottom:2px dashed var(--line); padding-bottom:16px;}
+.kiosk-title{font-family:'Caveat'; font-weight:700; font-size:56px; color:var(--chalk);}
+.kiosk-date{font-family:'Caveat'; font-size:34px; color:var(--gold);}
+.kiosk-grid{display:grid; grid-template-columns:1fr 1.3fr; gap:36px;}
+@media (max-width:900px){ .kiosk-grid{grid-template-columns:1fr;} }
+.kiosk-section-title{font-family:'Caveat'; font-size:32px; color:var(--gold); margin-bottom:14px;}
+.kiosk-event{display:flex; align-items:center; gap:14px; background:var(--board-3); border-left:6px solid var(--dot); border-radius:12px; padding:16px 18px; margin-bottom:12px; font-size:22px; font-weight:700;}
+.kiosk-time{font-family:'Space Mono'; font-size:18px; color:var(--chalk-dim); min-width:70px;}
+.kiosk-empty{color:var(--chalk-faint); font-size:20px; font-style:italic;}
+.kiosk-person-block{margin-bottom:22px;}
+.kiosk-person-name{font-family:'Caveat'; font-size:28px; margin-bottom:8px;}
+.kiosk-task{display:flex; align-items:center; gap:14px; background:var(--board-3); border-left:6px solid var(--dot); border-radius:12px; padding:14px 18px; margin-bottom:10px; font-size:20px; font-weight:700; cursor:pointer;}
+.kiosk-task input[type=checkbox]{width:28px; height:28px; accent-color:var(--p3); cursor:pointer; flex-shrink:0;}
+.kiosk-task.done span:nth-child(2){text-decoration:line-through; color:var(--chalk-faint);}
+.kiosk-pts{margin-left:auto; font-family:'Space Mono'; color:var(--gold); font-size:18px;}
+
 ::-webkit-scrollbar{width:8px;}
 ::-webkit-scrollbar-thumb{background:var(--board-3); border-radius:4px;}
