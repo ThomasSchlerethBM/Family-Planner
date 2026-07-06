@@ -21,6 +21,51 @@ gehostet auf GitHub Pages.
   Schrift, kein Admin-Zugriff) – ideal für ein Tablet in der Küche
 - Eigenes App-Icon (Klemmbrett mit Punkte-Münze) für Homescreen/Manifest
 
+## Google-Kalender direkt verbinden (mehrere Konten)
+
+Jedes Familienmitglied kann sein eigenes Google-Konto verbinden; die Termine
+werden automatisch alle 15 Minuten abgeglichen und für alle sichtbar in die
+Familientafel übernommen (read-only, es wird nichts in Google geändert).
+
+### Einmalige Einrichtung in der Google Cloud Console
+
+1. https://console.cloud.google.com → Projekt anlegen (oder vorhandenes nutzen)
+2. **APIs & Dienste → Bibliothek** → "Google Calendar API" suchen → **Aktivieren**
+3. **APIs & Dienste → OAuth-Zustimmungsbildschirm**:
+   - Nutzertyp: **Extern**
+   - App-Name z. B. "Familientafel", eigene E-Mail als Support-Kontakt
+   - Unter **Testnutzer**: die Gmail-Adressen aller Familienmitglieder eintragen,
+     die ihren Kalender verbinden sollen (im Testmodus reicht das für bis zu
+     100 Nutzer – keine Google-Prüfung nötig, keine Kosten)
+4. **APIs & Dienste → Anmeldedaten → Anmeldedaten erstellen → OAuth-Client-ID**:
+   - Anwendungstyp: **Webanwendung**
+   - Autorisierte JavaScript-Quellen:
+     - `https://thomasschlerethbm.github.io`
+     - `http://localhost:5173` (für lokales Testen)
+   - Erstellen → die angezeigte Client-ID kopieren (endet auf `.apps.googleusercontent.com`)
+5. Client-ID in `src/googleCalendar.js` eintragen:
+   ```js
+   export const GOOGLE_CLIENT_ID = 'DEINE_CLIENT_ID.apps.googleusercontent.com';
+   ```
+
+### Nutzung in der App
+
+In der Seitenleiste unter **🔗 Google-Kalender**: bei der jeweiligen Person auf
+**Verbinden** klicken → Google-Login-Popup erscheint → Kalenderzugriff (nur
+Lesen) bestätigen. Danach erscheinen die Termine dieser Person automatisch als
+Sondertermine (mit "G"-Kennzeichen) in allen Ansichten.
+
+**Einschränkungen dieser reinen Browser-Lösung:**
+- Die Berechtigung läuft technisch bedingt nach kurzer Zeit ab; die App
+  versucht automatisch eine stille Erneuerung, manchmal ist aber ein erneuter
+  Klick auf "Verbinden" nötig
+- Es werden nur Termine der nächsten ~4 Monate und der letzten 7 Tage geholt
+- Reine Leserechte – Termine lassen sich nicht aus der Familientafel heraus in
+  Google anlegen (dafür weiterhin den "+ Termin"-Button nutzen, der bleibt lokal)
+
+Der bisherige ICS-Text-Import bleibt als Alternative bestehen, z. B. für
+Kalender, die nicht über ein Google-Konto laufen.
+
 ## Familienmitglieder umbenennen
 
 1. Oben rechts auf **Admin 🔒** klicken, PIN eingeben

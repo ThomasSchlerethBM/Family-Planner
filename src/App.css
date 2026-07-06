@@ -149,6 +149,11 @@ body{
 .member-add-row input[type=text]{flex:1; background:var(--board-3); border:1px solid var(--line); color:var(--chalk); border-radius:8px; padding:6px 9px; font-family:'Nunito'; font-size:13px;}
 .btn-ghost.small{width:auto; padding:6px 10px; font-size:11.5px; white-space:nowrap;}
 
+.gcal-row{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px dashed var(--line);}
+.gcal-row:last-of-type{border-bottom:none;}
+.gcal-name{flex:1; font-weight:700; font-size:13px;}
+.gcal-error{color:var(--danger,#E8654F); font-size:11.5px; margin-top:6px;}
+
 /* KIOSK MODE */
 .kiosk{min-height:100vh; padding:32px 40px; background:var(--board);}
 .kiosk-header{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:28px; border-bottom:2px dashed var(--line); padding-bottom:16px;}

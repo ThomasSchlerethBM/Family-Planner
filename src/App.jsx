@@ -8,11 +8,12 @@ import {
 } from './dateUtils';
 import KioskView from './KioskView.jsx';
 import MembersManager from './MembersManager.jsx';
+import GoogleCalendarPanel from './GoogleCalendarPanel.jsx';
 
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
 // Einlösen braucht niemand die PIN.
-const ADMIN_PIN = '51441081';
+const ADMIN_PIN = '1234';
 
 const today = new Date();
 const isKioskUrl = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('kiosk') === '1';
@@ -391,6 +392,8 @@ export default function App() {
 
         <div className="sidebar">
           {isAdmin && <MembersManager people={people} />}
+
+          <GoogleCalendarPanel people={people} events={events} />
 
           <div className="card">
             <h3>🪙 Punktestand</h3>
