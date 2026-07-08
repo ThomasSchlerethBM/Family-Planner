@@ -18,7 +18,7 @@
 //    Bezeichner, kein Geheimnis, darf im Code stehen)
 // ------------------------------------------------------------------
 
-export const GOOGLE_CLIENT_ID = 'DEINE_CLIENT_ID.apps.googleusercontent.com';
+export const GOOGLE_CLIENT_ID = '76117333633-paro1ja1cnatq32fokoo6nu1t96dia97.apps.googleusercontent.com';
 
 const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
 
