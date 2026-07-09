@@ -33,3 +33,10 @@ export const SEED_REWARDS = {
   r3: { name: 'Filmabend aussuchen', cost: 30 },
   r4: { name: 'Ausflug nach Wahl', cost: 120 },
 };
+
+export const SEED_KIOSK_PRESETS = {
+  eltern: { label: 'Eltern', personIds: ['papa', 'mama'] },
+  tim: { label: 'Tim', personIds: ['tim'] },
+  liz: { label: 'Liz', personIds: ['kind2'] },
+  kinder: { label: 'Kinder', personIds: ['tim', 'kind2'] },
+};

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { listenList, pushItem, setItem, updateItem, removeItem, seedIfEmpty } from './db';
-import { SEED_MEMBERS, SEED_EVENTS, SEED_TASKS, SEED_REWARDS } from './seedData';
+import { SEED_MEMBERS, SEED_EVENTS, SEED_TASKS, SEED_REWARDS, SEED_KIOSK_PRESETS } from './seedData';
 import {
   DOW, MONTHS, dkey, sameDay, addDays, startOfWeek, startOfMonth,
   fmtLabelDay, fmtLabelWeek, fmtLabelMonth, completionKey,
@@ -27,6 +27,7 @@ export default function App() {
   const [completions, setCompletions] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
   const [adjustments, setAdjustments] = useState([]);
+  const [kioskPresets, setKioskPresets] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -54,6 +55,7 @@ export default function App() {
       await seedIfEmpty('events', SEED_EVENTS);
       await seedIfEmpty('tasks', SEED_TASKS);
       await seedIfEmpty('rewards', SEED_REWARDS);
+      await seedIfEmpty('kioskPresets', SEED_KIOSK_PRESETS);
       setLoading(false);
     })();
 
@@ -67,7 +69,8 @@ export default function App() {
     const un5 = listenList('completions', setCompletions);
     const un6 = listenList('redemptions', setRedemptions);
     const un7 = listenList('adjustments', setAdjustments);
-    return () => { un1(); un2(); un3(); un4(); un5(); un6(); un7(); };
+    const un8 = listenList('kioskPresets', setKioskPresets);
+    return () => { un1(); un2(); un3(); un4(); un5(); un6(); un7(); un8(); };
   }, []);
 
   function togglePerson(id) {
@@ -158,8 +161,9 @@ export default function App() {
     else alert('Falsche PIN.');
   }
 
-  if (loading) return <div className="loading-screen">Lade Familientafel…</div>;
-  if (isKioskUrl) return <KioskView people={people} events={events} tasks={tasks} completions={completions} />;
+  if (loading) return <div className="loading-screen">Lade Family Planner…</div>;
+  if (isKioskUrl) return <KioskView people={people} events={events} tasks={tasks} completions={completions}
+    rewards={rewards} redemptions={redemptions} adjustments={adjustments} kioskPresets={kioskPresets} />;
 
   function PersonDots({ ids }) {
     return <span style={{ display: 'flex', gap: 3 }}>
@@ -348,7 +352,7 @@ export default function App() {
     <div>
       <div className="header">
         <div className="title-wrap">
-          <h1>📋 Familientafel</h1>
+          <h1>📋 Family Planner</h1>
           <div className="sub">Kalender &amp; Aufgaben an einem Ort · live synchronisiert</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -472,13 +476,16 @@ export default function App() {
           setShowRewardModal(false); setEditingReward(null);
         }} />}
       {showPinModal && <PinModal onClose={() => setShowPinModal(false)} onSubmit={tryUnlockAdmin} />}
-      {showKioskModal && <KioskQrModal onClose={() => setShowKioskModal(false)} people={people} />}
+      {showKioskModal && <KioskQrModal onClose={() => setShowKioskModal(false)} people={people} kioskPresets={kioskPresets}
+        onSavePreset={(label, personIds) => pushItem('kioskPresets', { label, personIds })}
+        onDeletePreset={(id) => removeItem('kioskPresets', id)} />}
     </div>
   );
 }
 
-function KioskQrModal({ onClose, people }) {
+function KioskQrModal({ onClose, people, kioskPresets, onSavePreset, onDeletePreset }) {
   const [selected, setSelected] = useState(people.map((p) => p.id));
+  const [presetLabel, setPresetLabel] = useState('');
   function toggle(id) { setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
   const allSelected = selected.length === people.length;
   const base = `${window.location.origin}${window.location.pathname}?kiosk=1`;
@@ -491,7 +498,9 @@ function KioskQrModal({ onClose, people }) {
         <div className="help-text" style={{ marginBottom: 12 }}>
           Wähle, wessen Termine &amp; Aufgaben in dieser Kiosk-Ansicht erscheinen
           sollen (z. B. nur Tim, oder Tim + Liz für ein Kinderzimmer-Tablet).
-          Scanne danach den QR-Code mit dem jeweiligen Tablet.
+          Scanne danach den QR-Code mit dem jeweiligen Tablet. Innerhalb des
+          Kiosk-Modus lässt sich später per Knopfdruck zwischen den unten
+          gespeicherten Profilen wechseln, ohne neu zu scannen.
         </div>
         <div className="person-pick" style={{ marginBottom: 14 }}>
           {people.map((p) => (
@@ -500,13 +509,37 @@ function KioskQrModal({ onClose, people }) {
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', background: 'var(--chalk)', padding: 16, borderRadius: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', background: 'var(--card-2)', padding: 16, borderRadius: 12, border: '1px solid var(--line)' }}>
           <QRCodeCanvas value={kioskUrl} size={200} />
         </div>
         <div className="help-text" style={{ marginTop: 12, wordBreak: 'break-all' }}>{kioskUrl}</div>
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>Schließen</button>
           <button className="btn-primary" disabled={selected.length === 0} onClick={() => window.open(kioskUrl, '_blank')}>In neuem Tab öffnen</button>
+        </div>
+
+        <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+          <label style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-dim)', display: 'block', marginBottom: 6, textTransform: 'uppercase' }}>
+            Als Profil speichern (erscheint als Knopf im Kiosk-Modus)
+          </label>
+          <div className="field row">
+            <input type="text" value={presetLabel} onChange={(e) => setPresetLabel(e.target.value)} placeholder="z. B. Eltern" />
+            <button className="btn-ghost small" disabled={!presetLabel.trim() || selected.length === 0}
+              onClick={() => { onSavePreset(presetLabel.trim(), selected); setPresetLabel(''); }}>
+              💾 Speichern
+            </button>
+          </div>
+          {kioskPresets.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              {kioskPresets.map((kp) => (
+                <div key={kp.id} className="gcal-row">
+                  <span className="gcal-name">{kp.label}</span>
+                  <span className="help-text">{kp.personIds.map((id) => people.find((p) => p.id === id)?.name).filter(Boolean).join(', ')}</span>
+                  <button className="row-del" onClick={() => onDeletePreset(kp.id)}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

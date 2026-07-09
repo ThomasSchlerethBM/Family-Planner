@@ -1,4 +1,4 @@
-# Familientafel
+# Family Planner
 
 Familien-Planer: Kalender + Aufgaben mit Punktesystem, live synchronisiert über
 Firebase Realtime Database. Gleicher Aufbau wie deine Tennis-App: React + Vite,
@@ -46,7 +46,7 @@ zeigt einen Hinweis und eine Checkbox **🔒 Sperren**. Ohne Sperre überschreib
 der nächste automatische Sync (alle 15 Minuten) deine Änderungen wieder mit dem
 Original aus Google. Mit Sperre bleiben deine Anpassungen erhalten. Über
 **🚫 Dauerhaft entfernen & aus Google-Sync ausschließen** verschwindet ein
-Google-Termin endgültig aus der Familientafel (z. B. für Termine, die euch
+Google-Termin endgültig aus der Family Planner (z. B. für Termine, die euch
 nicht interessieren) – er wird auch bei künftigen Syncs nicht mehr importiert.
 
 ## Aufgaben-Icons
@@ -66,14 +66,36 @@ die noch nicht lesen können, ihre Aufgaben erkennen.
 4. Auf dem Tablet den Browser in den Vollbildmodus schalten bzw. die Seite zum
    Homescreen hinzufügen, damit es wie eine eigene App aussieht
 
-Für unterschiedliche Tablets/Kinder einfach mehrmals mit unterschiedlicher
-Auswahl öffnen und den jeweiligen QR-Code auf dem passenden Gerät scannen.
+### Profile für Knopfdruck-Wechsel im Kiosk-Modus
+
+Im selben Dialog lässt sich eine Auswahl zusätzlich **als Profil speichern**
+(Name eintragen, z. B. "Eltern", dann "💾 Speichern"). Diese Profile erscheinen
+danach als Knöpfe direkt oben im Kiosk-Modus – man kann also z. B. auf einem
+gemeinsamen Küchentablet per Fingertipp zwischen "Alle", "Eltern", "Tim", "Liz"
+und "Kinder" wechseln, ohne erneut einen QR-Code zu scannen.
+
+Beim ersten Start sind bereits vier Profile vorbereitet: **Eltern** (Tina +
+Thomas), **Tim**, **Liz**, **Kinder** (Tim + Liz). Weitere lassen sich beliebig
+ergänzen oder über das ✕ neben dem Profil im selben Dialog wieder löschen.
+
+### Punkte-Ansicht im Kiosk-Modus
+
+Oben im Kiosk-Modus zwischen **📅 Heute** und **🏆 Punkte** umschalten. Die
+Punkte-Ansicht zeigt für jede aktuell ausgewählte Person eine Säule: Füllstand
+= aktueller Punktestand, kleine Striche markieren die Kosten der angelegten
+Prämien, darunter steht "noch X Punkte bis '<nächste Prämie>'".
+
+### Aktualisieren-Knopf
+
+Der 🔄-Knopf oben rechts im Kiosk-Modus lädt die Seite neu – praktisch, falls
+die Live-Synchronisation im Hintergrund einmal hakt oder eine neue Version der
+App deployed wurde.
 
 ## Familienmitglieder umbenennen
 
 Jedes Familienmitglied kann sein eigenes Google-Konto verbinden; die Termine
 werden automatisch alle 15 Minuten abgeglichen und für alle sichtbar in die
-Familientafel übernommen (read-only, es wird nichts in Google geändert).
+Family Planner übernommen (read-only, es wird nichts in Google geändert).
 
 ### Einmalige Einrichtung in der Google Cloud Console
 
@@ -81,7 +103,7 @@ Familientafel übernommen (read-only, es wird nichts in Google geändert).
 2. **APIs & Dienste → Bibliothek** → "Google Calendar API" suchen → **Aktivieren**
 3. **APIs & Dienste → OAuth-Zustimmungsbildschirm**:
    - Nutzertyp: **Extern**
-   - App-Name z. B. "Familientafel", eigene E-Mail als Support-Kontakt
+   - App-Name z. B. "Family Planner", eigene E-Mail als Support-Kontakt
    - Unter **Testnutzer**: die Gmail-Adressen aller Familienmitglieder eintragen,
      die ihren Kalender verbinden sollen (im Testmodus reicht das für bis zu
      100 Nutzer – keine Google-Prüfung nötig, keine Kosten)
@@ -108,7 +130,7 @@ Sondertermine (mit "G"-Kennzeichen) in allen Ansichten.
   versucht automatisch eine stille Erneuerung, manchmal ist aber ein erneuter
   Klick auf "Verbinden" nötig
 - Es werden nur Termine der nächsten ~4 Monate und der letzten 7 Tage geholt
-- Reine Leserechte – Termine lassen sich nicht aus der Familientafel heraus in
+- Reine Leserechte – Termine lassen sich nicht aus der Family Planner heraus in
   Google anlegen (dafür weiterhin den "+ Termin"-Button nutzen, der bleibt lokal)
 
 Der bisherige ICS-Text-Import bleibt als Alternative bestehen, z. B. für
