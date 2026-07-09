@@ -1,6 +1,6 @@
 {
-  "name": "Familientafel",
-  "short_name": "Familientafel",
+  "name": "Family Planner",
+  "short_name": "Family Planner",
   "description": "Kalender & Aufgaben-Punktesystem für die ganze Familie",
   "start_url": ".",
   "display": "standalone",
