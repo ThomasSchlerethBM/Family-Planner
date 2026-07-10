@@ -56,6 +56,19 @@ zur Verfügung, oder ein eigenes Emoji lässt sich frei eintragen. Icons
 erscheinen in allen Ansichten sowie groß im Kiosk-Modus, damit auch Kinder,
 die noch nicht lesen können, ihre Aufgaben erkennen.
 
+## Tageszeit (Morgens / Mittags / Abends)
+
+Beim Anlegen/Bearbeiten einer Aufgabe lässt sich zusätzlich eine Tageszeit
+festlegen: **🌅 Morgens**, **☀️ Mittags**, **🌙 Abends**, oder **📌 Jederzeit**
+(Standard, falls nichts ausgewählt wird). In der Tagesansicht und im
+Kiosk-Modus werden die Aufgaben automatisch nach dieser Tageszeit gruppiert
+und mit entsprechender Überschrift angezeigt – so ist auf einen Blick klar,
+was morgens, mittags oder abends ansteht.
+
+Bestehende Aufgaben (aus der Zeit vor diesem Update) haben noch keine
+Tageszeit gesetzt und laufen deshalb unter "📌 Jederzeit" – im Admin-Modus auf
+die jeweilige Aufgabe klicken und die Tageszeit einmalig nachtragen.
+
 ## Kiosk-Modus einrichten
 
 1. Admin-Modus → **🖥️ Kiosk-Modus** klicken

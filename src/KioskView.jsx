@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { dkey, fmtLabelDay, completionKey } from './dateUtils';
 import { removeItem, setItem } from './db';
+import { groupByTimeOfDay } from './timeOfDay';
 
 const today = new Date();
 
@@ -83,20 +84,26 @@ export default function KioskView({ people: allPeople, events, tasks, completion
             {people.map((person) => {
               const mine = tks.filter((t) => (t.personIds || []).includes(person.id));
               if (mine.length === 0) return null;
+              const groups = groupByTimeOfDay(mine, (t) => t.timeOfDay);
               return (
                 <div className="kiosk-person-block" key={person.id}>
                   <div className="kiosk-person-name" style={{ color: person.color }}>{person.name}</div>
-                  {mine.map((t) => {
-                    const done = isDone(t.id, person.id);
-                    return (
-                      <label key={t.id} className={'kiosk-task' + (done ? ' done' : '')} style={{ '--dot': person.color }}>
-                        <input type="checkbox" checked={done} onChange={() => toggleTask(t, person.id)} />
-                        <span className="kiosk-task-icon">{t.icon || '✅'}</span>
-                        <span className="kiosk-task-title">{t.title}</span>
-                        <span className="kiosk-pts">+{t.points}</span>
-                      </label>
-                    );
-                  })}
+                  {groups.map((g) => (
+                    <div key={g.key} className="kiosk-tod-group">
+                      <div className="kiosk-tod-label">{g.label}</div>
+                      {g.items.map((t) => {
+                        const done = isDone(t.id, person.id);
+                        return (
+                          <label key={t.id} className={'kiosk-task' + (done ? ' done' : '')} style={{ '--dot': person.color }}>
+                            <input type="checkbox" checked={done} onChange={() => toggleTask(t, person.id)} />
+                            <span className="kiosk-task-icon">{t.icon || '✅'}</span>
+                            <span className="kiosk-task-title">{t.title}</span>
+                            <span className="kiosk-pts">+{t.points}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
               );
             })}

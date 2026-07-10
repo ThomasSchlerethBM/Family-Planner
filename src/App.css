@@ -88,6 +88,7 @@ body{
 /* DAY VIEW - timeline style */
 .day-col{display:flex; flex-direction:column; gap:10px; position:relative;}
 .day-section-title{font-weight:800; font-size:15px; color:var(--text); margin-bottom:2px; display:flex; align-items:center; gap:6px;}
+.tod-label{font-weight:800; font-size:12px; color:var(--text-faint); margin:12px 0 6px 18px; text-transform:uppercase; letter-spacing:0.03em;}
 .event-row, .task-row{
   display:flex; align-items:center; gap:10px; background:var(--card-2); border-radius:var(--radius-md);
   padding:12px 14px; margin-bottom:8px; margin-left:18px; position:relative;
@@ -239,6 +240,8 @@ body{
 .kiosk-empty{color:var(--text-faint); font-size:18px; font-style:italic;}
 .kiosk-person-block{margin-bottom:24px;}
 .kiosk-person-name{font-weight:800; font-size:22px; margin-bottom:10px; color:var(--text);}
+.kiosk-tod-group{margin-bottom:10px;}
+.kiosk-tod-label{font-weight:800; font-size:14px; color:var(--text-faint); margin:10px 0 6px; text-transform:uppercase; letter-spacing:0.03em;}
 .kiosk-task{display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--dot); border-radius:var(--radius-md); padding:16px 20px; margin-bottom:10px; font-size:20px; font-weight:700; cursor:pointer; box-shadow:var(--shadow-sm);}
 .kiosk-task input[type=checkbox]{width:28px; height:28px; accent-color:var(--p3); cursor:pointer; flex-shrink:0;}
 .kiosk-task.done{opacity:0.5;}

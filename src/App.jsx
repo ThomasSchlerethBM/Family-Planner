@@ -10,6 +10,7 @@ import KioskView from './KioskView.jsx';
 import MembersManager from './MembersManager.jsx';
 import GoogleCalendarPanel from './GoogleCalendarPanel.jsx';
 import PointAdjuster from './PointAdjuster.jsx';
+import { groupByTimeOfDay } from './timeOfDay';
 
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
@@ -195,22 +196,32 @@ export default function App() {
         {(mode === 'chores' || mode === 'both') && <div style={{ marginTop: 10 }}>
           <div className="day-section-title">✅ Aufgaben</div>
           {tks.length === 0 && <div className="empty-note">Keine Aufgaben an diesem Tag.</div>}
-          {tks.map((t) => (t.personIds || []).filter((pid) => selectedPersons.includes(pid)).map((pid) => {
-            const done = isDone(t.id, pid, key);
-            const person = personObj(pid);
-            if (!person) return null;
-            return (
-              <div className={'task-row' + (done ? ' done' : '')} style={{ '--dot': person.color }} key={t.id + pid}>
-                <input type="checkbox" checked={done} onChange={() => toggleTask(t, pid, current)} />
-                <span className="task-icon">{t.icon || '✅'}</span>
-                <span className="name" style={{ cursor: isAdmin ? 'pointer' : 'default' }} onClick={() => isAdmin && openEditTask(t)}>
-                  {t.title} <span style={{ color: 'var(--chalk-faint)', fontWeight: 400 }}>· {person.name}</span>
-                </span>
-                <span className="pts">+{t.points}</span>
-                {isAdmin && <button className="row-del" onClick={() => removeItem('tasks', t.id)}>✕</button>}
+          {(() => {
+            const entries = tks.flatMap((t) => (t.personIds || [])
+              .filter((pid) => selectedPersons.includes(pid))
+              .map((pid) => ({ t, pid, person: personObj(pid) }))
+              .filter((e) => e.person));
+            const groups = groupByTimeOfDay(entries, (e) => e.t.timeOfDay);
+            return groups.map((g) => (
+              <div key={g.key}>
+                {groups.length > 1 && <div className="tod-label">{g.label}</div>}
+                {g.items.map(({ t, pid, person }) => {
+                  const done = isDone(t.id, pid, key);
+                  return (
+                    <div className={'task-row' + (done ? ' done' : '')} style={{ '--dot': person.color }} key={t.id + pid}>
+                      <input type="checkbox" checked={done} onChange={() => toggleTask(t, pid, current)} />
+                      <span className="task-icon">{t.icon || '✅'}</span>
+                      <span className="name" style={{ cursor: isAdmin ? 'pointer' : 'default' }} onClick={() => isAdmin && openEditTask(t)}>
+                        {t.title} <span style={{ color: 'var(--chalk-faint)', fontWeight: 400 }}>· {person.name}</span>
+                      </span>
+                      <span className="pts">+{t.points}</span>
+                      {isAdmin && <button className="row-del" onClick={() => removeItem('tasks', t.id)}>✕</button>}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          }))}
+            ));
+          })()}
         </div>}
       </div>
     );
@@ -677,6 +688,13 @@ function EventModal({ people, onClose, onSave, onExclude, existing }) {
 
 const ICON_PRESETS = ['🦷', '🛏️', '🍽️', '🧹', '♻️', '📦', '👕', '🐕', '🌱', '📚', '🧺', '🛁', '🚗', '🗑️', '✅'];
 
+const TIME_OF_DAY_OPTIONS = [
+  { value: '', label: '📌 Jederzeit' },
+  { value: 'morning', label: '🌅 Morgens' },
+  { value: 'midday', label: '☀️ Mittags' },
+  { value: 'evening', label: '🌙 Abends' },
+];
+
 function TaskModal({ people, onClose, onSave, existing }) {
   const [title, setTitle] = useState(existing?.title || '');
   const [points, setPoints] = useState(existing?.points ?? 10);
@@ -684,6 +702,7 @@ function TaskModal({ people, onClose, onSave, existing }) {
   const [dueDate, setDueDate] = useState(existing?.dueDate || dkey(new Date()));
   const [personIds, setPersonIds] = useState(existing?.personIds || []);
   const [icon, setIcon] = useState(existing?.icon || '✅');
+  const [timeOfDay, setTimeOfDay] = useState(existing?.timeOfDay || '');
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
   return (
     <div className="modal-bg" onClick={onClose}>
@@ -698,6 +717,16 @@ function TaskModal({ people, onClose, onSave, existing }) {
               <button type="button" key={ic} className={'icon-choice' + (icon === ic ? ' active' : '')} onClick={() => setIcon(ic)}>{ic}</button>
             ))}
             <input type="text" className="icon-custom" value={icon} onChange={(e) => setIcon(e.target.value)} maxLength={4} />
+          </div>
+        </div>
+        <div className="field">
+          <label>Tageszeit</label>
+          <div className="segmented" style={{ width: '100%' }}>
+            {TIME_OF_DAY_OPTIONS.map((opt) => (
+              <button type="button" key={opt.value} className={timeOfDay === opt.value ? 'active' : ''} onClick={() => setTimeOfDay(opt.value)} style={{ flex: 1 }}>
+                {opt.label}
+              </button>
+            ))}
           </div>
         </div>
         <div className="field row">
@@ -724,7 +753,7 @@ function TaskModal({ people, onClose, onSave, existing }) {
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>Abbrechen</button>
           <button className="btn-primary" disabled={!title || personIds.length === 0}
-            onClick={() => onSave({ title, points, freq, dueDate: freq === 'once' ? dueDate : null, personIds, icon })}>Speichern</button>
+            onClick={() => onSave({ title, points, freq, dueDate: freq === 'once' ? dueDate : null, personIds, icon, timeOfDay: timeOfDay || null })}>Speichern</button>
         </div>
       </div>
     </div>
