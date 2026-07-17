@@ -96,13 +96,42 @@ ergänzen oder über das ✕ neben dem Profil im selben Dialog wieder löschen.
 Oben im Kiosk-Modus zwischen **📅 Heute** und **🏆 Punkte** umschalten. Die
 Punkte-Ansicht zeigt für jede aktuell ausgewählte Person eine Säule: Füllstand
 = aktueller Punktestand, kleine Striche markieren die Kosten der angelegten
-Prämien, darunter steht "noch X Punkte bis '<nächste Prämie>'".
+Prämien (bei eng beieinanderliegenden Kosten automatisch mit Mindestabstand
+zueinander versetzt, damit die Beschriftungen nicht überlappen), darunter
+steht "noch X Punkte bis '<nächste Prämie>'".
+
+**Direkt einlösen:** Auf die Säule oder den Knopf **🎁 Einlösen** tippen öffnet
+eine Auswahl aller Prämien. Eine auswählen und mit **OK** bestätigen. Reicht
+der Punktestand, wird die Prämie sofort eingelöst und der Punktestand
+automatisch reduziert. Reicht er nicht, erscheint eine Meldung wie "Dir fehlen
+noch 15 Punkte für 'Eis essen gehen'." – die Auswahl bleibt offen, sodass
+stattdessen eine günstigere Prämie gewählt werden kann.
 
 ### Aktualisieren-Knopf
 
 Der 🔄-Knopf oben rechts im Kiosk-Modus lädt die Seite neu – praktisch, falls
 die Live-Synchronisation im Hintergrund einmal hakt oder eine neue Version der
 App deployed wurde.
+
+## Wochentage individuell festlegen (Aufgaben & Termine)
+
+Sowohl bei Aufgaben als auch bei Terminen lässt sich jetzt genau festlegen, an
+welchen Wochentagen sie gelten:
+
+**Aufgaben:** Bei "Häufigkeit" → "Wiederkehrend" auswählen, darunter erscheint
+die Tage-Auswahl mit drei Schnellauswahl-Knöpfen (**Jeden Tag**, **Wochentags
+(Mo–Fr)**, **Wochenende**) sowie sieben einzelnen Tages-Knöpfen zum Anklicken
+für individuelle Kombinationen (z. B. nur Dienstag + Donnerstag).
+
+**Termine:** Neues Feld "Wiederholung" → **Einmalig** (wie bisher, mit festem
+Datum) oder **Wöchentlich** (mit derselben Tage-Auswahl statt eines festen
+Datums). So lässt sich z. B. "Schwimmen" einmal als wöchentlicher Termin
+dienstags und donnerstags anlegen, statt ihn jede Woche neu einzutragen.
+Wiederkehrende Termine zeigen ein 🔁-Kennzeichen mit der Kurzfassung der
+gewählten Tage.
+
+Bestehende Aufgaben/Termine (ohne Tages-Auswahl) laufen unverändert weiter wie
+bisher (Aufgaben: jeden Tag; Termine: am eingetragenen Einzeldatum).
 
 ## Familienmitglieder umbenennen
 

@@ -11,6 +11,8 @@ import MembersManager from './MembersManager.jsx';
 import GoogleCalendarPanel from './GoogleCalendarPanel.jsx';
 import PointAdjuster from './PointAdjuster.jsx';
 import { groupByTimeOfDay } from './timeOfDay';
+import { taskOccursOn, eventOccursOn, weekdaysSummary, WEEKDAY_PRESETS } from './occurrence';
+import WeekdayPicker from './WeekdayPicker.jsx';
 
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
@@ -91,11 +93,8 @@ export default function App() {
   const visibleEvents = useMemo(() => events.filter(visibleForEvent), [events, selectedPersons]);
   const visibleTasks = useMemo(() => tasks.filter(visibleForTask), [tasks, selectedPersons]);
 
-  function eventsOn(key) { return visibleEvents.filter((e) => e.date === key); }
-  function tasksOn(dateObj) {
-    const key = dkey(dateObj);
-    return visibleTasks.filter((t) => (t.freq === 'daily' ? true : t.dueDate === key));
-  }
+  function eventsOn(dateObj) { return visibleEvents.filter((e) => eventOccursOn(e, dateObj)); }
+  function tasksOn(dateObj) { return visibleTasks.filter((t) => taskOccursOn(t, dateObj)); }
   function isDone(taskId, personId, key) {
     return completions.some((c) => c.taskId === taskId && c.personId === personId && c.dateKey === key);
   }
@@ -174,7 +173,7 @@ export default function App() {
 
   function DayView() {
     const key = dkey(current);
-    const evs = eventsOn(key).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+    const evs = eventsOn(current).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
     const tks = tasksOn(current);
     return (
       <div className="day-col">
@@ -188,6 +187,7 @@ export default function App() {
               <span className="name">{e.title}</span>
               <PersonDots ids={e.personIds} />
               <span className={'tag ' + (e.type === 'special' ? 'tag-special' : 'tag-recurring')}>{e.type === 'special' ? 'Sonder' : 'Fest'}</span>
+              {e.recurrence === 'weekly' && <span className="tag" title="Wiederkehrender Termin">🔁 {weekdaysSummary(e.weekdays)}</span>}
               {e.source === 'google' && <span className="tag" title="Aus Google importiert">G{e.manualOverride ? ' 🔒' : ''}</span>}
               {isAdmin && <button className="row-del" onClick={(ev) => { ev.stopPropagation(); removeItem('events', e.id); }}>✕</button>}
             </div>
@@ -234,7 +234,7 @@ export default function App() {
       <div className="week-grid">
         {days.map((dt) => {
           const key = dkey(dt);
-          const evs = eventsOn(key);
+          const evs = eventsOn(dt);
           const tks = tasksOn(dt);
           return (
             <div className={'week-day' + (sameDay(dt, today) ? ' today' : '')} key={key}>
@@ -278,7 +278,7 @@ export default function App() {
           {cells.map((dt) => {
             const key = dkey(dt);
             const inMonth = dt.getMonth() === current.getMonth();
-            const evs = eventsOn(key);
+            const evs = eventsOn(dt);
             const tks = tasksOn(dt).flatMap((t) => (t.personIds || []).filter((pid) => selectedPersons.includes(pid)));
             const showEv = mode === 'calendar' || mode === 'both';
             const showCh = mode === 'chores' || mode === 'both';
@@ -303,7 +303,7 @@ export default function App() {
 
   function DayDetailPanel({ dt }) {
     const key = dkey(dt);
-    const evs = eventsOn(key);
+    const evs = eventsOn(dt);
     const tks = tasksOn(dt);
     return (
       <div className="card" style={{ marginTop: 14 }}>
@@ -347,7 +347,7 @@ export default function App() {
                 {cells.map((dt) => {
                   const key = dkey(dt);
                   const inMonth = dt.getMonth() === mi;
-                  const has = inMonth && (eventsOn(key).length > 0 || tasksOn(dt).length > 0);
+                  const has = inMonth && (eventsOn(dt).length > 0 || tasksOn(dt).length > 0);
                   return <div key={key} className={'year-mini-cell' + (has ? ' has-item' : '') + (sameDay(dt, today) ? ' today' : '')}
                     style={{ opacity: inMonth ? 1 : 0.15 }}></div>;
                 })}
@@ -627,6 +627,8 @@ function EventModal({ people, onClose, onSave, onExclude, existing }) {
   const [type, setType] = useState(existing?.type || 'special');
   const [personIds, setPersonIds] = useState(existing?.personIds || []);
   const [locked, setLocked] = useState(existing?.manualOverride || false);
+  const [recurrence, setRecurrence] = useState(existing?.recurrence || 'once');
+  const [weekdays, setWeekdays] = useState(existing?.weekdays || WEEKDAY_PRESETS.weekdays);
   const isGoogle = existing?.source === 'google';
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
   return (
@@ -642,10 +644,27 @@ function EventModal({ people, onClose, onSave, onExclude, existing }) {
           </div>
         )}
         <div className="field"><label>Titel</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. Zahnarzt" /></div>
+        {!isGoogle && (
+          <div className="field">
+            <label>Wiederholung</label>
+            <div className="segmented" style={{ width: '100%' }}>
+              <button type="button" className={recurrence === 'once' ? 'active' : ''} style={{ flex: 1 }} onClick={() => setRecurrence('once')}>Einmalig</button>
+              <button type="button" className={recurrence === 'weekly' ? 'active' : ''} style={{ flex: 1 }} onClick={() => setRecurrence('weekly')}>Wöchentlich</button>
+            </div>
+          </div>
+        )}
         <div className="field row">
-          <div><label>Datum</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          {recurrence === 'once'
+            ? <div><label>Datum</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+            : null}
           <div><label>Uhrzeit (optional)</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
         </div>
+        {recurrence === 'weekly' && (
+          <div className="field">
+            <label>An welchen Tagen? (z. B. Schwimmen dienstags &amp; donnerstags)</label>
+            <WeekdayPicker value={weekdays} onChange={setWeekdays} />
+          </div>
+        )}
         <div className="field">
           <label>Art</label>
           <select value={type} onChange={(e) => setType(e.target.value)}>
@@ -671,8 +690,11 @@ function EventModal({ people, onClose, onSave, onExclude, existing }) {
         )}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>Abbrechen</button>
-          <button className="btn-primary" disabled={!title}
-            onClick={() => onSave({ title, date, time, type, personIds, source: existing?.source || 'local', manualOverride: locked })}>
+          <button className="btn-primary" disabled={!title || (recurrence === 'weekly' && weekdays.length === 0)}
+            onClick={() => onSave({
+              title, time, type, personIds, source: existing?.source || 'local', manualOverride: locked,
+              recurrence, date: recurrence === 'once' ? date : null, weekdays: recurrence === 'weekly' ? weekdays : null,
+            })}>
             Speichern
           </button>
         </div>
@@ -703,6 +725,7 @@ function TaskModal({ people, onClose, onSave, existing }) {
   const [personIds, setPersonIds] = useState(existing?.personIds || []);
   const [icon, setIcon] = useState(existing?.icon || '✅');
   const [timeOfDay, setTimeOfDay] = useState(existing?.timeOfDay || '');
+  const [weekdays, setWeekdays] = useState(existing?.weekdays || WEEKDAY_PRESETS.all);
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
   return (
     <div className="modal-bg" onClick={onClose}>
@@ -734,12 +757,18 @@ function TaskModal({ people, onClose, onSave, existing }) {
           <div>
             <label>Häufigkeit</label>
             <select value={freq} onChange={(e) => setFreq(e.target.value)}>
-              <option value="daily">Tägliche Routine</option>
+              <option value="daily">Wiederkehrend</option>
               <option value="once">Einmalig</option>
             </select>
           </div>
         </div>
         {freq === 'once' && <div className="field"><label>Fällig am</label><input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>}
+        {freq === 'daily' && (
+          <div className="field">
+            <label>An welchen Tagen?</label>
+            <WeekdayPicker value={weekdays} onChange={setWeekdays} />
+          </div>
+        )}
         <div className="field">
           <label>Zuständig</label>
           <div className="person-pick">
@@ -752,8 +781,8 @@ function TaskModal({ people, onClose, onSave, existing }) {
         </div>
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>Abbrechen</button>
-          <button className="btn-primary" disabled={!title || personIds.length === 0}
-            onClick={() => onSave({ title, points, freq, dueDate: freq === 'once' ? dueDate : null, personIds, icon, timeOfDay: timeOfDay || null })}>Speichern</button>
+          <button className="btn-primary" disabled={!title || personIds.length === 0 || (freq === 'daily' && weekdays.length === 0)}
+            onClick={() => onSave({ title, points, freq, dueDate: freq === 'once' ? dueDate : null, personIds, icon, timeOfDay: timeOfDay || null, weekdays: freq === 'daily' ? weekdays : null })}>Speichern</button>
         </div>
       </div>
     </div>
