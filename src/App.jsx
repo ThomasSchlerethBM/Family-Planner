@@ -14,6 +14,7 @@ import { groupByTimeOfDay } from './timeOfDay';
 import { taskOccursOn, eventOccursOn, weekdaysSummary, WEEKDAY_PRESETS } from './occurrence';
 import WeekdayPicker from './WeekdayPicker.jsx';
 import Timeline, { RESOLUTIONS } from './Timeline.jsx';
+import TimeWindowControl from './TimeWindowControl.jsx';
 
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
@@ -42,6 +43,7 @@ export default function App() {
   const [period, setPeriod] = useState('week');
   const [current, setCurrent] = useState(new Date());
   const [resolutionMinutes, setResolutionMinutes] = useState(15);
+  const [timeWindow, setTimeWindow] = useState(null); // null = automatisch/alle Termine
   const [selectedPersons, setSelectedPersons] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
 
@@ -82,6 +84,9 @@ export default function App() {
     setSelectedPersons((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   }
   function personColor(id) { const p = people.find((p) => p.id === id); return p ? p.color : 'var(--chalk-faint)'; }
+  function timeToMin(t) { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); }
+  const windowStart = timeWindow ? timeToMin(timeWindow.start) : null;
+  const windowEnd = timeWindow ? timeToMin(timeWindow.end) : null;
   function personObj(id) { return people.find((p) => p.id === id); }
   function openEditEvent(e) { setEditingEvent(e); setShowEventModal(true); }
   function openEditTask(t) { setEditingTask(t); setShowTaskModal(true); }
@@ -181,7 +186,7 @@ export default function App() {
       <div className="day-col">
         {(mode === 'calendar' || mode === 'both') && <div>
           <div className="day-section-title">📅 Termine</div>
-          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} />
+          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} windowStart={windowStart} windowEnd={windowEnd} />
         </div>}
         {(mode === 'chores' || mode === 'both') && <div style={{ marginTop: 10 }}>
           <div className="day-section-title">✅ Aufgaben</div>
@@ -230,7 +235,7 @@ export default function App() {
     return (
       <div>
         {(mode === 'calendar' || mode === 'both') && (
-          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} />
+          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} windowStart={windowStart} windowEnd={windowEnd} />
         )}
         {(mode === 'chores' || mode === 'both') && (
           <div className="week-grid" style={{ marginTop: mode === 'both' ? 16 : 0 }}>
@@ -401,6 +406,9 @@ export default function App() {
                 ))}
               </div>
             </div>
+          )}
+          {(period === 'day' || period === 'week') && (mode === 'calendar' || mode === 'both') && (
+            <TimeWindowControl window={timeWindow} onChange={setTimeWindow} />
           )}
         </div>
         <div className="datewalk">

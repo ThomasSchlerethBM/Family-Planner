@@ -241,8 +241,10 @@ body{
 .kiosk-screen-toggle button{background:transparent; border:none; color:var(--text-dim); font-weight:700; font-size:13px; padding:8px 14px; border-radius:999px; cursor:pointer;}
 .kiosk-screen-toggle button.active{background:var(--text); color:#fff;}
 .kiosk-refresh{background:var(--card); border:1.5px solid var(--line); border-radius:50%; width:42px; height:42px; font-size:18px; cursor:pointer; box-shadow:var(--shadow-sm);}
-.kiosk-grid{display:grid; grid-template-columns:1fr 1.3fr; gap:36px;}
+.kiosk-cal-controls{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:16px;}
+.kiosk-grid{display:grid; grid-template-columns:1.5fr 1fr; gap:36px; align-items:start;}
 @media (max-width:900px){ .kiosk-grid{grid-template-columns:1fr;} }
+.kiosk-col-cal{overflow-x:auto;}
 .kiosk-section-title{font-weight:800; font-size:20px; color:var(--text); margin-bottom:16px;}
 .kiosk-event{display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--dot); border-radius:var(--radius-md); padding:18px 20px; margin-bottom:12px; font-size:22px; font-weight:700; box-shadow:var(--shadow-sm);}
 .kiosk-time{font-family:'Inter'; font-weight:800; font-size:17px; color:var(--text-dim); min-width:70px;}
@@ -315,7 +317,7 @@ body{
 .tl-gutter{position:relative;}
 .tl-hour-label{position:absolute; right:8px; transform:translateY(-50%); font-family:'Inter'; font-size:10.5px; font-weight:700; color:var(--text-faint); white-space:nowrap;}
 .tl-daycol{
-  position:relative; border-left:1px solid var(--line);
+  position:relative; border-left:1px solid var(--line); overflow:hidden;
   background-image: repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 1px, transparent 1px, transparent 100%);
   background-repeat: repeat-y;
 }
@@ -329,3 +331,11 @@ body{
 .tl-event-title{font-size:11.5px; font-weight:700; color:var(--text); display:block; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .tl-resolution-picker{display:inline-flex; align-items:center; gap:6px;}
 .tl-resolution-picker .segmented button{padding:6px 11px; font-size:12px;}
+
+.tw-control{display:inline-flex; align-items:center; gap:6px;}
+.tw-control input[type=time]{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--radius-sm);
+  padding:6px 8px; font-family:'Inter'; font-size:12.5px; color:var(--text);
+}
+.tw-control .icon-btn{padding:7px 12px; font-size:12px;}
+.tw-control .icon-btn.tw-active{background:var(--text); color:#fff; border-color:var(--text);}

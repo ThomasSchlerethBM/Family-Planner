@@ -42,9 +42,25 @@ function layoutLanes(items) {
 /**
  * days: [{ key, dayLabel, dateLabel, isToday, events: [{id,title,time,durationMinutes,type,personIds,...}] }]
  * onEventClick: optional (event) => void, used for admin edit-on-click
+ * windowStart/windowEnd: optional minutes-from-midnight to force a fixed visible
+ * range (e.g. 8:00-16:00) instead of auto-sizing to the events present.
  */
-export default function Timeline({ days, resolutionMinutes, onEventClick }) {
+export default function Timeline({ days, resolutionMinutes, onEventClick, windowStart, windowEnd }) {
+  const hasWindow = windowStart != null && windowEnd != null && windowEnd > windowStart;
+
   const { startMin, endMin, timed } = useMemo(() => {
+    if (hasWindow) {
+      const withTimes = [];
+      days.forEach((day) => {
+        day.events.forEach((e) => {
+          const sm = toMinutes(e.time);
+          if (sm === null) return;
+          const dur = e.durationMinutes || 60;
+          withTimes.push({ dayKey: day.key, ...e, startMin: sm, endMin: sm + dur });
+        });
+      });
+      return { startMin: windowStart, endMin: windowEnd, timed: withTimes };
+    }
     let minStart = DEFAULT_START_MIN;
     let maxEnd = DEFAULT_END_MIN;
     const withTimes = [];
@@ -59,7 +75,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick }) {
       });
     });
     return { startMin: minStart, endMin: maxEnd, timed: withTimes };
-  }, [days]);
+  }, [days, hasWindow, windowStart, windowEnd]);
 
   const totalMin = endMin - startMin;
   const gridHeight = totalMin * PX_PER_MIN;

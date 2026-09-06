@@ -14,6 +14,11 @@ mehrerer Kinder nebeneinander gut vergleichen.
 
 - **Rasterauflösung einstellbar**: in der Symbolleiste "Raster: 15 / 30 / 60 Min"
   auswählen (Standard: 15 Minuten)
+- **Zeitfenster einstellbar**: in der Symbolleiste "Zeitfenster" von/bis
+  festlegen (z. B. 08:00–16:00), um nur einen bestimmten Ausschnitt des Tages
+  zu sehen – Termine außerhalb werden ausgeblendet. Über den Knopf
+  **"Alle Termine"** wieder zur automatischen Ansicht zurückschalten (zeigt
+  den vollen Zeitraum aller vorhandenen Termine)
 - **Start- und Endzeit je Termin**: beim Anlegen/Bearbeiten eines Termins mit
   Uhrzeit lassen sich Start- **und** Endzeit festlegen (bei einer neuen
   Startzeit wird die Endzeit zunächst automatisch auf +60 Minuten vorgeschlagen,
@@ -118,9 +123,25 @@ Beim ersten Start sind bereits vier Profile vorbereitet: **Eltern** (Tina +
 Thomas), **Tim**, **Liz**, **Kinder** (Tim + Liz). Weitere lassen sich beliebig
 ergänzen oder über das ✕ neben dem Profil im selben Dialog wieder löschen.
 
+### Termine im Kiosk-Modus: Tag / Woche / Monat, wie im Family Planner
+
+Im Kiosk-Modus (Reiter **📅 Termine & Aufgaben**) gibt es dieselben
+Zeitraum-Knöpfe wie im normalen Family-Planner-Modus: **Tag**, **Woche**,
+**Monat**. Bei Tag und Woche erscheinen die Termine als dieselbe
+Outlook-artige Zeitleiste wie im Hauptmodus, inklusive Raster-Auflösung
+(15/30/60 Min.) und einstellbarem **Zeitfenster** (z. B. 08:00–13:00 Uhr für
+den Vormittag) – über **"Alle Termine"** lässt sich das Zeitfenster jederzeit
+wieder aufheben. Bei Monat erscheint eine kompakte Monatsübersicht mit
+Termin-Punkten pro Tag; ein Tag antippen zeigt dessen Termine darunter an.
+
+Die gewählte Zeitraum-/Raster-/Fenster-Einstellung wird pro Gerät gespeichert
+(bleibt also auch nach einem Reload über den 🔄-Knopf erhalten). Die
+Aufgaben-Liste rechts zeigt weiterhin immer die heutigen Aufgaben, unabhängig
+vom gewählten Kalender-Zeitraum.
+
 ### Punkte-Ansicht im Kiosk-Modus
 
-Oben im Kiosk-Modus zwischen **📅 Heute** und **🏆 Punkte** umschalten. Die
+Oben im Kiosk-Modus zwischen **📅 Termine & Aufgaben** und **🏆 Punkte** umschalten. Die
 Punkte-Ansicht zeigt für jede aktuell ausgewählte Person eine Säule: Füllstand
 = aktueller Punktestand, kleine Striche markieren die Kosten der angelegten
 Prämien (bei eng beieinanderliegenden Kosten automatisch mit Mindestabstand
