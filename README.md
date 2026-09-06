@@ -125,19 +125,33 @@ ergänzen oder über das ✕ neben dem Profil im selben Dialog wieder löschen.
 
 ### Termine im Kiosk-Modus: Tag / Woche / Monat, wie im Family Planner
 
-Im Kiosk-Modus (Reiter **📅 Termine & Aufgaben**) gibt es dieselben
-Zeitraum-Knöpfe wie im normalen Family-Planner-Modus: **Tag**, **Woche**,
-**Monat**. Bei Tag und Woche erscheinen die Termine als dieselbe
-Outlook-artige Zeitleiste wie im Hauptmodus, inklusive Raster-Auflösung
-(15/30/60 Min.) und einstellbarem **Zeitfenster** (z. B. 08:00–13:00 Uhr für
-den Vormittag) – über **"Alle Termine"** lässt sich das Zeitfenster jederzeit
-wieder aufheben. Bei Monat erscheint eine kompakte Monatsübersicht mit
-Termin-Punkten pro Tag; ein Tag antippen zeigt dessen Termine darunter an.
+Im Kiosk-Modus (Reiter **📅 Termine & Aufgaben**) gibt es zunächst einen
+Umschalter **Beides / Nur Termine / Nur Aufgaben**, um wahlweise nur die eine
+oder andere Hälfte in voller Breite zu sehen – praktisch für ein Tablet, auf
+dem nur der Aufgaben-Teil (oder nur der Kalender) Platz finden soll.
 
-Die gewählte Zeitraum-/Raster-/Fenster-Einstellung wird pro Gerät gespeichert
-(bleibt also auch nach einem Reload über den 🔄-Knopf erhalten). Die
-Aufgaben-Liste rechts zeigt weiterhin immer die heutigen Aufgaben, unabhängig
-vom gewählten Kalender-Zeitraum.
+Bei "Beides" oder "Nur Termine" gibt es dieselben Zeitraum-Knöpfe wie im
+normalen Family-Planner-Modus: **Tag**, **Woche**, **Monat**. Bei Tag und
+Woche erscheinen die Termine als dieselbe Outlook-artige Zeitleiste wie im
+Hauptmodus, inklusive Raster-Auflösung (15/30/60 Min.) und einstellbarem
+**Zeitfenster** (z. B. 08:00–13:00 Uhr für den Vormittag) – über
+**"Alle Termine"** lässt sich das Zeitfenster jederzeit wieder aufheben. Bei
+Monat erscheint eine kompakte Monatsübersicht mit Termin-Punkten pro Tag; ein
+Tag antippen zeigt dessen Termine darunter an.
+
+**Aufgaben nebeneinander:** Bei mehreren ausgewählten Personen (z. B. das
+Profil "Kinder" = Tim + Liz) erscheinen deren Aufgaben-Spalten nebeneinander
+statt untereinander – auf einen Blick vergleichbar, wer heute was zu tun hat.
+
+**Aufgaben-Größe:** Mit "Klein / Mittel / Groß" lässt sich die Darstellung der
+Aufgaben-Karten stufenlos anpassen – "Klein" bringt mehr auf eine
+Bildschirmseite, "Groß" ist besser lesbar (z. B. für jüngere Kinder) auf
+Kosten von mehr Scrollen.
+
+Alle diese Einstellungen (Modus, Zeitraum, Raster, Zeitfenster,
+Aufgaben-Größe) werden pro Gerät gespeichert (bleiben also auch nach einem
+Reload über den 🔄-Knopf erhalten). Die Aufgaben-Liste zeigt weiterhin immer
+die heutigen Aufgaben, unabhängig vom gewählten Kalender-Zeitraum.
 
 ### Punkte-Ansicht im Kiosk-Modus
 

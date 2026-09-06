@@ -30,12 +30,16 @@ function timeToMin(t) { const [h, m] = t.split(':').map(Number); return h * 60 +
 export default function KioskView({ people: allPeople, events, tasks, completions, rewards, redemptions, adjustments, kioskPresets }) {
   const [activeFilter, setActiveFilter] = useState(getUrlPeopleFilter()); // null = everyone
   const [screen, setScreen] = useState('agenda'); // 'agenda' | 'points'
+  const [agendaMode, setAgendaMode] = useState(() => loadLS('agendaMode', 'both')); // 'both' | 'calendar' | 'chores'
+  const [taskScale, setTaskScale] = useState(() => loadLS('taskScale', 'm')); // 's' | 'm' | 'l'
   const [calPeriod, setCalPeriod] = useState(() => loadLS('period', 'day')); // 'day' | 'week' | 'month'
   const [resolutionMinutes, setResolutionMinutes] = useState(() => loadLS('resolution', 15));
   const [timeWindow, setTimeWindow] = useState(() => loadLS('window', null));
   const [redeemPerson, setRedeemPerson] = useState(null);
   const [selectedMonthDay, setSelectedMonthDay] = useState(null);
 
+  useEffect(() => saveLS('agendaMode', agendaMode), [agendaMode]);
+  useEffect(() => saveLS('taskScale', taskScale), [taskScale]);
   useEffect(() => saveLS('period', calPeriod), [calPeriod]);
   useEffect(() => saveLS('resolution', resolutionMinutes), [resolutionMinutes]);
   useEffect(() => saveLS('window', timeWindow), [timeWindow]);
@@ -123,11 +127,18 @@ export default function KioskView({ people: allPeople, events, tasks, completion
         <>
           <div className="kiosk-cal-controls">
             <div className="kiosk-screen-toggle">
-              <button className={calPeriod === 'day' ? 'active' : ''} onClick={() => setCalPeriod('day')}>Tag</button>
-              <button className={calPeriod === 'week' ? 'active' : ''} onClick={() => setCalPeriod('week')}>Woche</button>
-              <button className={calPeriod === 'month' ? 'active' : ''} onClick={() => setCalPeriod('month')}>Monat</button>
+              <button className={agendaMode === 'both' ? 'active' : ''} onClick={() => setAgendaMode('both')}>Beides</button>
+              <button className={agendaMode === 'calendar' ? 'active' : ''} onClick={() => setAgendaMode('calendar')}>Nur Termine</button>
+              <button className={agendaMode === 'chores' ? 'active' : ''} onClick={() => setAgendaMode('chores')}>Nur Aufgaben</button>
             </div>
-            {calPeriod !== 'month' && (
+            {agendaMode !== 'chores' && (
+              <div className="kiosk-screen-toggle">
+                <button className={calPeriod === 'day' ? 'active' : ''} onClick={() => setCalPeriod('day')}>Tag</button>
+                <button className={calPeriod === 'week' ? 'active' : ''} onClick={() => setCalPeriod('week')}>Woche</button>
+                <button className={calPeriod === 'month' ? 'active' : ''} onClick={() => setCalPeriod('month')}>Monat</button>
+              </div>
+            )}
+            {agendaMode !== 'chores' && calPeriod !== 'month' && (
               <div className="tl-resolution-picker">
                 <span className="help-text">Raster:</span>
                 <div className="segmented">
@@ -137,48 +148,64 @@ export default function KioskView({ people: allPeople, events, tasks, completion
                 </div>
               </div>
             )}
-            {calPeriod !== 'month' && <TimeWindowControl window={timeWindow} onChange={setTimeWindow} />}
+            {agendaMode !== 'chores' && calPeriod !== 'month' && <TimeWindowControl window={timeWindow} onChange={setTimeWindow} />}
+            {agendaMode !== 'calendar' && (
+              <div className="tl-resolution-picker">
+                <span className="help-text">Aufgaben-Größe:</span>
+                <div className="segmented">
+                  <button className={taskScale === 's' ? 'active' : ''} onClick={() => setTaskScale('s')}>Klein</button>
+                  <button className={taskScale === 'm' ? 'active' : ''} onClick={() => setTaskScale('m')}>Mittel</button>
+                  <button className={taskScale === 'l' ? 'active' : ''} onClick={() => setTaskScale('l')}>Groß</button>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="kiosk-grid">
-            <div className="kiosk-col kiosk-col-cal">
-              {(calPeriod === 'day' || calPeriod === 'week') && (
-                <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} windowStart={windowStart} windowEnd={windowEnd} />
-              )}
-              {calPeriod === 'month' && (
-                <KioskMonthView eventsOnDate={eventsOnDate} selected={selectedMonthDay} onSelect={setSelectedMonthDay} />
-              )}
-            </div>
+          <div className={'kiosk-grid' + (agendaMode !== 'both' ? ' single' : '')}>
+            {agendaMode !== 'chores' && (
+              <div className="kiosk-col kiosk-col-cal">
+                {(calPeriod === 'day' || calPeriod === 'week') && (
+                  <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} windowStart={windowStart} windowEnd={windowEnd} />
+                )}
+                {calPeriod === 'month' && (
+                  <KioskMonthView eventsOnDate={eventsOnDate} selected={selectedMonthDay} onSelect={setSelectedMonthDay} />
+                )}
+              </div>
+            )}
 
-            <div className="kiosk-col">
-              <div className="kiosk-section-title">✅ Aufgaben heute</div>
-              {people.map((person) => {
-                const mine = tks.filter((t) => (t.personIds || []).includes(person.id));
-                if (mine.length === 0) return null;
-                const groups = groupByTimeOfDay(mine, (t) => t.timeOfDay);
-                return (
-                  <div className="kiosk-person-block" key={person.id}>
-                    <div className="kiosk-person-name" style={{ color: person.color }}>{person.name}</div>
-                    {groups.map((g) => (
-                      <div key={g.key} className="kiosk-tod-group">
-                        <div className="kiosk-tod-label">{g.label}</div>
-                        {g.items.map((t) => {
-                          const done = isDone(t.id, person.id);
-                          return (
-                            <label key={t.id} className={'kiosk-task' + (done ? ' done' : '')} style={{ '--dot': person.color }}>
-                              <input type="checkbox" checked={done} onChange={() => toggleTask(t, person.id)} />
-                              <span className="kiosk-task-icon">{t.icon || '✅'}</span>
-                              <span className="kiosk-task-title">{t.title}</span>
-                              <span className="kiosk-pts">+{t.points}</span>
-                            </label>
-                          );
-                        })}
+            {agendaMode !== 'calendar' && (
+              <div className="kiosk-col">
+                <div className="kiosk-section-title">✅ Aufgaben heute</div>
+                <div className={'kiosk-tasks-columns kiosk-scale-' + taskScale}>
+                  {people.map((person) => {
+                    const mine = tks.filter((t) => (t.personIds || []).includes(person.id));
+                    if (mine.length === 0) return null;
+                    const groups = groupByTimeOfDay(mine, (t) => t.timeOfDay);
+                    return (
+                      <div className="kiosk-person-col" key={person.id}>
+                        <div className="kiosk-person-name" style={{ color: person.color }}>{person.name}</div>
+                        {groups.map((g) => (
+                          <div key={g.key} className="kiosk-tod-group">
+                            <div className="kiosk-tod-label">{g.label}</div>
+                            {g.items.map((t) => {
+                              const done = isDone(t.id, person.id);
+                              return (
+                                <label key={t.id} className={'kiosk-task' + (done ? ' done' : '')} style={{ '--dot': person.color }}>
+                                  <input type="checkbox" checked={done} onChange={() => toggleTask(t, person.id)} />
+                                  <span className="kiosk-task-icon">{t.icon || '✅'}</span>
+                                  <span className="kiosk-task-title">{t.title}</span>
+                                  <span className="kiosk-pts">+{t.points}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

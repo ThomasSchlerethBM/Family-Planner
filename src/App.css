@@ -243,21 +243,45 @@ body{
 .kiosk-refresh{background:var(--card); border:1.5px solid var(--line); border-radius:50%; width:42px; height:42px; font-size:18px; cursor:pointer; box-shadow:var(--shadow-sm);}
 .kiosk-cal-controls{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:16px;}
 .kiosk-grid{display:grid; grid-template-columns:1.5fr 1fr; gap:36px; align-items:start;}
+.kiosk-grid.single{grid-template-columns:1fr;}
 @media (max-width:900px){ .kiosk-grid{grid-template-columns:1fr;} }
 .kiosk-col-cal{overflow-x:auto;}
 .kiosk-section-title{font-weight:800; font-size:20px; color:var(--text); margin-bottom:16px;}
 .kiosk-event{display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--dot); border-radius:var(--radius-md); padding:18px 20px; margin-bottom:12px; font-size:22px; font-weight:700; box-shadow:var(--shadow-sm);}
 .kiosk-time{font-family:'Inter'; font-weight:800; font-size:17px; color:var(--text-dim); min-width:70px;}
 .kiosk-empty{color:var(--text-faint); font-size:18px; font-style:italic;}
-.kiosk-person-block{margin-bottom:24px;}
-.kiosk-person-name{font-weight:800; font-size:22px; margin-bottom:10px; color:var(--text);}
+.kiosk-tasks-columns{display:flex; gap:28px; align-items:flex-start; overflow-x:auto; padding-bottom:8px;}
+.kiosk-person-col{flex:1 1 0; min-width:220px;}
+.kiosk-person-name{font-weight:800; color:var(--text);}
 .kiosk-tod-group{margin-bottom:10px;}
-.kiosk-tod-label{font-weight:800; font-size:14px; color:var(--text-faint); margin:10px 0 6px; text-transform:uppercase; letter-spacing:0.03em;}
-.kiosk-task{display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--dot); border-radius:var(--radius-md); padding:16px 20px; margin-bottom:10px; font-size:20px; font-weight:700; cursor:pointer; box-shadow:var(--shadow-sm);}
-.kiosk-task input[type=checkbox]{width:28px; height:28px; accent-color:var(--p3); cursor:pointer; flex-shrink:0;}
+.kiosk-tod-label{font-weight:800; color:var(--text-faint); margin:10px 0 6px; text-transform:uppercase; letter-spacing:0.03em;}
+.kiosk-task{display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--dot); border-radius:var(--radius-md); cursor:pointer; box-shadow:var(--shadow-sm); font-weight:700;}
+.kiosk-task input[type=checkbox]{accent-color:var(--p3); cursor:pointer; flex-shrink:0;}
 .kiosk-task.done{opacity:0.5;}
 .kiosk-task.done .kiosk-task-title{text-decoration:line-through; color:var(--text-faint);}
-.kiosk-pts{margin-left:auto; font-family:'Inter'; font-weight:800; color:var(--gold); font-size:17px;}
+.kiosk-pts{margin-left:auto; font-family:'Inter'; font-weight:800; color:var(--gold);}
+
+/* Aufgaben-Größe: Klein / Mittel / Groß */
+.kiosk-scale-s .kiosk-person-name{font-size:16px; margin-bottom:6px;}
+.kiosk-scale-s .kiosk-tod-label{font-size:10.5px;}
+.kiosk-scale-s .kiosk-task{padding:8px 12px; margin-bottom:5px; font-size:13px;}
+.kiosk-scale-s .kiosk-task input[type=checkbox]{width:17px; height:17px;}
+.kiosk-scale-s .kiosk-task-icon{font-size:16px;}
+.kiosk-scale-s .kiosk-pts{font-size:12px;}
+
+.kiosk-scale-m .kiosk-person-name{font-size:20px; margin-bottom:8px;}
+.kiosk-scale-m .kiosk-tod-label{font-size:12.5px;}
+.kiosk-scale-m .kiosk-task{padding:11px 15px; margin-bottom:7px; font-size:15px;}
+.kiosk-scale-m .kiosk-task input[type=checkbox]{width:20px; height:20px;}
+.kiosk-scale-m .kiosk-task-icon{font-size:19px;}
+.kiosk-scale-m .kiosk-pts{font-size:13.5px;}
+
+.kiosk-scale-l .kiosk-person-name{font-size:26px; margin-bottom:10px;}
+.kiosk-scale-l .kiosk-tod-label{font-size:15px;}
+.kiosk-scale-l .kiosk-task{padding:17px 21px; margin-bottom:11px; font-size:21px;}
+.kiosk-scale-l .kiosk-task input[type=checkbox]{width:28px; height:28px;}
+.kiosk-scale-l .kiosk-task-icon{font-size:27px;}
+.kiosk-scale-l .kiosk-pts{font-size:18px;}
 
 .kiosk-points-grid{display:flex; gap:70px; flex-wrap:wrap; justify-content:center; padding-top:10px;}
 .points-col-wrap{display:flex; flex-direction:column; align-items:center; width:170px; position:relative;}
