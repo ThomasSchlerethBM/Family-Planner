@@ -14,9 +14,12 @@ mehrerer Kinder nebeneinander gut vergleichen.
 
 - **Rasterauflösung einstellbar**: in der Symbolleiste "Raster: 15 / 30 / 60 Min"
   auswählen (Standard: 15 Minuten)
-- **Dauer je Termin**: beim Anlegen/Bearbeiten eines Termins mit Uhrzeit lässt
-  sich zusätzlich die Dauer in Minuten festlegen (Standard 60 Min.) – das
-  bestimmt, wie hoch der Termin in der Zeitleiste dargestellt wird
+- **Start- und Endzeit je Termin**: beim Anlegen/Bearbeiten eines Termins mit
+  Uhrzeit lassen sich Start- **und** Endzeit festlegen (bei einer neuen
+  Startzeit wird die Endzeit zunächst automatisch auf +60 Minuten vorgeschlagen,
+  danach frei anpassbar) – das bestimmt, wie hoch der Termin in der Zeitleiste
+  dargestellt wird. Liegt die Endzeit vor der Startzeit, erscheint ein Hinweis
+  und Speichern ist blockiert.
 - **"Ohne Zeit"-Zeile**: Termine ohne Uhrzeit erscheinen oben als Chips
   (analog zu Outlooks "Ganztägig"-Zeile), statt in der Zeitachse zu verschwinden
 - Sich überschneidende Termine werden automatisch nebeneinander statt

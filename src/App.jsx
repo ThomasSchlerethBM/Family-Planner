@@ -628,18 +628,39 @@ function RewardModal({ existing, onClose, onSave }) {
   );
 }
 
+function addMinutesToTime(time, minutes) {
+  const [h, m] = time.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const hh = Math.floor(total / 60) % 24;
+  const mm = total % 60;
+  return `${hh < 10 ? '0' : ''}${hh}:${mm < 10 ? '0' : ''}${mm}`;
+}
+function diffMinutes(start, end) {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+}
+
 function EventModal({ people, onClose, onSave, onExclude, existing }) {
   const [title, setTitle] = useState(existing?.title || '');
   const [date, setDate] = useState(existing?.date || dkey(new Date()));
   const [time, setTime] = useState(existing?.time || '');
+  const [endTime, setEndTime] = useState(
+    existing?.time ? addMinutesToTime(existing.time, existing?.durationMinutes ?? 60) : ''
+  );
   const [type, setType] = useState(existing?.type || 'special');
   const [personIds, setPersonIds] = useState(existing?.personIds || []);
   const [locked, setLocked] = useState(existing?.manualOverride || false);
   const [recurrence, setRecurrence] = useState(existing?.recurrence || 'once');
   const [weekdays, setWeekdays] = useState(existing?.weekdays || WEEKDAY_PRESETS.weekdays);
-  const [durationMinutes, setDurationMinutes] = useState(existing?.durationMinutes ?? 60);
   const isGoogle = existing?.source === 'google';
+  const timeInvalid = time && endTime && diffMinutes(time, endTime) <= 0;
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
+  function handleStartChange(v) {
+    setTime(v);
+    // keep a sensible end time in sync when a start is picked for the first time
+    if (v && !endTime) setEndTime(addMinutesToTime(v, 60));
+  }
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -666,9 +687,10 @@ function EventModal({ people, onClose, onSave, onExclude, existing }) {
           {recurrence === 'once'
             ? <div><label>Datum</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
             : null}
-          <div><label>Uhrzeit (optional)</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
-          {time && <div><label>Dauer (Min.)</label><input type="number" min="5" step="5" value={durationMinutes} onChange={(e) => setDurationMinutes(parseInt(e.target.value || 60))} /></div>}
+          <div><label>Startzeit (optional)</label><input type="time" value={time} onChange={(e) => handleStartChange(e.target.value)} /></div>
+          {time && <div><label>Endzeit</label><input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></div>}
         </div>
+        {timeInvalid && <div className="help-text" style={{ color: 'var(--danger)', marginTop: -6, marginBottom: 10 }}>Endzeit muss nach der Startzeit liegen.</div>}
         {recurrence === 'weekly' && (
           <div className="field">
             <label>An welchen Tagen? (z. B. Schwimmen dienstags &amp; donnerstags)</label>
@@ -700,11 +722,11 @@ function EventModal({ people, onClose, onSave, onExclude, existing }) {
         )}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>Abbrechen</button>
-          <button className="btn-primary" disabled={!title || (recurrence === 'weekly' && weekdays.length === 0)}
+          <button className="btn-primary" disabled={!title || timeInvalid || (recurrence === 'weekly' && weekdays.length === 0)}
             onClick={() => onSave({
               title, time, type, personIds, source: existing?.source || 'local', manualOverride: locked,
               recurrence, date: recurrence === 'once' ? date : null, weekdays: recurrence === 'weekly' ? weekdays : null,
-              durationMinutes: time ? durationMinutes : null,
+              durationMinutes: time ? (endTime ? diffMinutes(time, endTime) : 60) : null,
             })}>
             Speichern
           </button>
