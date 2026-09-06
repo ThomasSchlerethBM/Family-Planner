@@ -4,6 +4,30 @@ Familien-Planer: Kalender + Aufgaben mit Punktesystem, live synchronisiert über
 Firebase Realtime Database. Gleicher Aufbau wie deine Tennis-App: React + Vite,
 gehostet auf GitHub Pages.
 
+## Zeitleisten-Ansicht (Tag & Woche)
+
+In der Tages- und Wochenansicht werden Termine (bei "Nur Kalender" oder
+"Beides") jetzt als echte Stunden-Zeitleiste dargestellt, ähnlich wie in
+Outlook: eine gemeinsame Zeitspalte links, Termine zeitlich exakt positioniert
+und proportional zu ihrer Dauer hoch – so lassen sich z. B. Stundenpläne
+mehrerer Kinder nebeneinander gut vergleichen.
+
+- **Rasterauflösung einstellbar**: in der Symbolleiste "Raster: 15 / 30 / 60 Min"
+  auswählen (Standard: 15 Minuten)
+- **Dauer je Termin**: beim Anlegen/Bearbeiten eines Termins mit Uhrzeit lässt
+  sich zusätzlich die Dauer in Minuten festlegen (Standard 60 Min.) – das
+  bestimmt, wie hoch der Termin in der Zeitleiste dargestellt wird
+- **"Ohne Zeit"-Zeile**: Termine ohne Uhrzeit erscheinen oben als Chips
+  (analog zu Outlooks "Ganztägig"-Zeile), statt in der Zeitachse zu verschwinden
+- Sich überschneidende Termine werden automatisch nebeneinander statt
+  übereinander angezeigt
+- Die Aufgaben-Darstellung (Nur Aufgaben / Beides) bleibt wie bisher als
+  kompakte Liste unterhalb bzw. daneben bestehen, da Aufgaben keine exakte
+  Uhrzeit haben (nur Morgens/Mittags/Abends)
+
+Bestehende Termine ohne Dauer-Angabe werden automatisch mit 60 Minuten Höhe
+dargestellt.
+
 ## Funktionen
 
 - Ansichten: Nur Kalender / Nur Aufgaben / Beides × Tag / Woche / Monat / Jahr

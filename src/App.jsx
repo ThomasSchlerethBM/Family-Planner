@@ -13,6 +13,7 @@ import PointAdjuster from './PointAdjuster.jsx';
 import { groupByTimeOfDay } from './timeOfDay';
 import { taskOccursOn, eventOccursOn, weekdaysSummary, WEEKDAY_PRESETS } from './occurrence';
 import WeekdayPicker from './WeekdayPicker.jsx';
+import Timeline, { RESOLUTIONS } from './Timeline.jsx';
 
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
@@ -40,6 +41,7 @@ export default function App() {
   const [mode, setMode] = useState('both');
   const [period, setPeriod] = useState('week');
   const [current, setCurrent] = useState(new Date());
+  const [resolutionMinutes, setResolutionMinutes] = useState(15);
   const [selectedPersons, setSelectedPersons] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
 
@@ -165,33 +167,21 @@ export default function App() {
   if (isKioskUrl) return <KioskView people={people} events={events} tasks={tasks} completions={completions}
     rewards={rewards} redemptions={redemptions} adjustments={adjustments} kioskPresets={kioskPresets} />;
 
-  function PersonDots({ ids }) {
-    return <span style={{ display: 'flex', gap: 3 }}>
-      {(ids || []).map((id) => <span key={id} className="mc-dot" style={{ background: personColor(id) }}></span>)}
-    </span>;
-  }
-
   function DayView() {
     const key = dkey(current);
-    const evs = eventsOn(current).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
     const tks = tasksOn(current);
+    const timelineDays = [{
+      key,
+      dayLabel: DOW[(current.getDay() + 6) % 7],
+      dateLabel: `${current.getDate()}.${current.getMonth() + 1}.`,
+      isToday: sameDay(current, today),
+      events: eventsOn(current),
+    }];
     return (
       <div className="day-col">
         {(mode === 'calendar' || mode === 'both') && <div>
           <div className="day-section-title">📅 Termine</div>
-          {evs.length === 0 && <div className="empty-note">Keine Termine an diesem Tag.</div>}
-          {evs.map((e) => (
-            <div className="event-row" style={{ '--dot': e.type === 'special' ? 'var(--coral)' : 'var(--p1)', cursor: isAdmin ? 'pointer' : 'default' }}
-              key={e.id} onClick={() => isAdmin && openEditEvent(e)}>
-              <span className="time">{e.time || '–'}</span>
-              <span className="name">{e.title}</span>
-              <PersonDots ids={e.personIds} />
-              <span className={'tag ' + (e.type === 'special' ? 'tag-special' : 'tag-recurring')}>{e.type === 'special' ? 'Sonder' : 'Fest'}</span>
-              {e.recurrence === 'weekly' && <span className="tag" title="Wiederkehrender Termin">🔁 {weekdaysSummary(e.weekdays)}</span>}
-              {e.source === 'google' && <span className="tag" title="Aus Google importiert">G{e.manualOverride ? ' 🔒' : ''}</span>}
-              {isAdmin && <button className="row-del" onClick={(ev) => { ev.stopPropagation(); removeItem('events', e.id); }}>✕</button>}
-            </div>
-          ))}
+          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} />
         </div>}
         {(mode === 'chores' || mode === 'both') && <div style={{ marginTop: 10 }}>
           <div className="day-section-title">✅ Aufgaben</div>
@@ -230,37 +220,45 @@ export default function App() {
   function WeekView() {
     const start = startOfWeek(current);
     const days = [...Array(7)].map((_, i) => addDays(start, i));
+    const timelineDays = days.map((dt) => ({
+      key: dkey(dt),
+      dayLabel: DOW[(dt.getDay() + 6) % 7],
+      dateLabel: `${dt.getDate()}.${dt.getMonth() + 1}.`,
+      isToday: sameDay(dt, today),
+      events: eventsOn(dt),
+    }));
     return (
-      <div className="week-grid">
-        {days.map((dt) => {
-          const key = dkey(dt);
-          const evs = eventsOn(dt);
-          const tks = tasksOn(dt);
-          return (
-            <div className={'week-day' + (sameDay(dt, today) ? ' today' : '')} key={key}>
-              <div className="wd-head">
-                <span className="wd-name">{DOW[(dt.getDay() + 6) % 7]}</span>
-                <span className="wd-num">{dt.getDate()}.{dt.getMonth() + 1}.</span>
-              </div>
-              {(mode === 'calendar' || mode === 'both') && evs.map((e) => (
-                <div className="mini-item" style={{ '--dot': e.type === 'special' ? 'var(--coral)' : 'var(--p1)' }} key={e.id}>
-                  {e.time && <span className="mono">{e.time}</span>} {e.title}
+      <div>
+        {(mode === 'calendar' || mode === 'both') && (
+          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} />
+        )}
+        {(mode === 'chores' || mode === 'both') && (
+          <div className="week-grid" style={{ marginTop: mode === 'both' ? 16 : 0 }}>
+            {days.map((dt) => {
+              const key = dkey(dt);
+              const tks = tasksOn(dt);
+              return (
+                <div className={'week-day' + (sameDay(dt, today) ? ' today' : '')} key={key}>
+                  <div className="wd-head">
+                    <span className="wd-name">{DOW[(dt.getDay() + 6) % 7]}</span>
+                    <span className="wd-num">{dt.getDate()}.{dt.getMonth() + 1}.</span>
+                  </div>
+                  {tks.flatMap((t) => (t.personIds || []).filter((pid) => selectedPersons.includes(pid)).map((pid) => {
+                    const done = isDone(t.id, pid, key);
+                    const person = personObj(pid);
+                    if (!person) return null;
+                    return (
+                      <label className={'mini-item' + (done ? ' done' : '')} style={{ '--dot': person.color }} key={t.id + pid}>
+                        <input type="checkbox" checked={done} onChange={() => toggleTask(t, pid, dt)} />
+                        <span>{t.icon || '✅'} {t.title} <span className="mini-item-person">· {person.name}</span></span>
+                      </label>
+                    );
+                  }))}
                 </div>
-              ))}
-              {(mode === 'chores' || mode === 'both') && tks.flatMap((t) => (t.personIds || []).filter((pid) => selectedPersons.includes(pid)).map((pid) => {
-                const done = isDone(t.id, pid, key);
-                const person = personObj(pid);
-                if (!person) return null;
-                return (
-                  <label className={'mini-item' + (done ? ' done' : '')} style={{ '--dot': person.color }} key={t.id + pid}>
-                    <input type="checkbox" checked={done} onChange={() => toggleTask(t, pid, dt)} />
-                    <span>{t.icon || '✅'} {t.title} <span className="mini-item-person">· {person.name}</span></span>
-                  </label>
-                );
-              }))}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
@@ -394,6 +392,16 @@ export default function App() {
             <button className={period === 'month' ? 'active' : ''} onClick={() => setPeriod('month')}>Monat</button>
             <button className={period === 'year' ? 'active' : ''} onClick={() => setPeriod('year')}>Jahr</button>
           </div>
+          {(period === 'day' || period === 'week') && (mode === 'calendar' || mode === 'both') && (
+            <div className="tl-resolution-picker">
+              <span className="help-text">Raster:</span>
+              <div className="segmented">
+                {RESOLUTIONS.map((r) => (
+                  <button key={r.value} className={resolutionMinutes === r.value ? 'active' : ''} onClick={() => setResolutionMinutes(r.value)}>{r.label}</button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="datewalk">
           <button onClick={() => step(-1)}>‹</button>
@@ -629,6 +637,7 @@ function EventModal({ people, onClose, onSave, onExclude, existing }) {
   const [locked, setLocked] = useState(existing?.manualOverride || false);
   const [recurrence, setRecurrence] = useState(existing?.recurrence || 'once');
   const [weekdays, setWeekdays] = useState(existing?.weekdays || WEEKDAY_PRESETS.weekdays);
+  const [durationMinutes, setDurationMinutes] = useState(existing?.durationMinutes ?? 60);
   const isGoogle = existing?.source === 'google';
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
   return (
@@ -658,6 +667,7 @@ function EventModal({ people, onClose, onSave, onExclude, existing }) {
             ? <div><label>Datum</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
             : null}
           <div><label>Uhrzeit (optional)</label><input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
+          {time && <div><label>Dauer (Min.)</label><input type="number" min="5" step="5" value={durationMinutes} onChange={(e) => setDurationMinutes(parseInt(e.target.value || 60))} /></div>}
         </div>
         {recurrence === 'weekly' && (
           <div className="field">
@@ -694,6 +704,7 @@ function EventModal({ people, onClose, onSave, onExclude, existing }) {
             onClick={() => onSave({
               title, time, type, personIds, source: existing?.source || 'local', manualOverride: locked,
               recurrence, date: recurrence === 'once' ? date : null, weekdays: recurrence === 'weekly' ? weekdays : null,
+              durationMinutes: time ? durationMinutes : null,
             })}>
             Speichern
           </button>

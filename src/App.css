@@ -300,3 +300,32 @@ body{
 
 ::-webkit-scrollbar{width:8px;}
 ::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+
+/* TIMELINE (Outlook-style hour grid) */
+.tl-wrap{overflow-x:auto;}
+.tl-grid-cols{display:grid; min-width:560px;}
+.tl-corner{border-bottom:1px solid var(--line);}
+.tl-daycol-head{text-align:center; padding:4px 4px 10px; border-bottom:1px solid var(--line);}
+.tl-daycol-head.today .tl-daycol-name, .tl-daycol-head.today .tl-daycol-date{color:var(--gold);}
+.tl-daycol-name{font-weight:800; font-size:13px; color:var(--text);}
+.tl-daycol-date{font-family:'Inter'; font-size:11px; color:var(--text-faint); font-weight:600;}
+.tl-gutter-label{font-size:10.5px; font-weight:700; color:var(--text-faint); text-align:right; padding:6px 8px 6px 0; border-bottom:1px solid var(--line);}
+.tl-allday-cell{border-left:1px solid var(--line); border-bottom:1px solid var(--line); padding:5px; display:flex; flex-direction:column; gap:4px; min-height:30px;}
+.tl-allday-chip{font-size:11px; font-weight:700; padding:4px 8px; border-radius:8px; background:var(--card-2); border-left:3px solid var(--dot); cursor:pointer;}
+.tl-gutter{position:relative;}
+.tl-hour-label{position:absolute; right:8px; transform:translateY(-50%); font-family:'Inter'; font-size:10.5px; font-weight:700; color:var(--text-faint); white-space:nowrap;}
+.tl-daycol{
+  position:relative; border-left:1px solid var(--line);
+  background-image: repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 1px, transparent 1px, transparent 100%);
+  background-repeat: repeat-y;
+}
+.tl-daycol.today{background-color:color-mix(in srgb, var(--gold) 5%, transparent);}
+.tl-hour-line{position:absolute; left:0; right:0; border-top:1px solid var(--line);}
+.tl-event{
+  position:absolute; border-radius:8px; background:color-mix(in srgb, var(--dot) 14%, white);
+  border-left:3px solid var(--dot); padding:3px 7px; overflow:hidden; cursor:pointer; box-sizing:border-box;
+}
+.tl-event-time{font-family:'Inter'; font-size:10px; font-weight:800; color:var(--dot); display:block; line-height:1.2;}
+.tl-event-title{font-size:11.5px; font-weight:700; color:var(--text); display:block; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.tl-resolution-picker{display:inline-flex; align-items:center; gap:6px;}
+.tl-resolution-picker .segmented button{padding:6px 11px; font-size:12px;}
