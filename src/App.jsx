@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { listenList, pushItem, setItem, updateItem, removeItem, seedIfEmpty } from './db';
+import { listenList, listenValue, pushItem, setItem, updateItem, removeItem, seedIfEmpty } from './db';
 import { SEED_MEMBERS, SEED_EVENTS, SEED_TASKS, SEED_REWARDS, SEED_KIOSK_PRESETS } from './seedData';
 import {
   DOW, MONTHS, dkey, sameDay, addDays, startOfWeek, startOfMonth,
@@ -11,10 +11,12 @@ import MembersManager from './MembersManager.jsx';
 import GoogleCalendarPanel from './GoogleCalendarPanel.jsx';
 import PointAdjuster from './PointAdjuster.jsx';
 import { groupByTimeOfDay } from './timeOfDay';
-import { taskOccursOn, eventOccursOn, weekdaysSummary, WEEKDAY_PRESETS } from './occurrence';
+import { taskOccursOn, eventOccursOn, weekdaysSummary, WEEKDAY_PRESETS, eventColor } from './occurrence';
 import WeekdayPicker from './WeekdayPicker.jsx';
 import Timeline, { RESOLUTIONS } from './Timeline.jsx';
 import TimeWindowControl from './TimeWindowControl.jsx';
+import WeatherSettings from './WeatherSettings.jsx';
+import { fetchHourlyWeather, buildDayWeather } from './weather.js';
 
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
@@ -44,6 +46,9 @@ export default function App() {
   const [current, setCurrent] = useState(new Date());
   const [resolutionMinutes, setResolutionMinutes] = useState(15);
   const [timeWindow, setTimeWindow] = useState(null); // null = automatisch/alle Termine
+  const [workWeekOnly, setWorkWeekOnly] = useState(false);
+  const [weatherLocation, setWeatherLocation] = useState(null); // {lat, lon, label}
+  const [weatherHourly, setWeatherHourly] = useState(null);
   const [selectedPersons, setSelectedPersons] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
 
@@ -77,8 +82,24 @@ export default function App() {
     const un6 = listenList('redemptions', setRedemptions);
     const un7 = listenList('adjustments', setAdjustments);
     const un8 = listenList('kioskPresets', setKioskPresets);
-    return () => { un1(); un2(); un3(); un4(); un5(); un6(); un7(); un8(); };
+    const un9 = listenValue('settings/weather', setWeatherLocation);
+    return () => { un1(); un2(); un3(); un4(); un5(); un6(); un7(); un8(); un9(); };
   }, []);
+
+  // fetch the hourly forecast once we know where "home" is, and refresh it
+  // periodically since Open-Meteo updates its forecast throughout the day
+  useEffect(() => {
+    if (!weatherLocation) return;
+    let cancelled = false;
+    function load() {
+      fetchHourlyWeather(weatherLocation.lat, weatherLocation.lon)
+        .then((hourly) => { if (!cancelled) setWeatherHourly(hourly); })
+        .catch(() => { /* silently skip - weather is a nice-to-have */ });
+    }
+    load();
+    const interval = setInterval(load, 60 * 60 * 1000); // hourly refresh
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [weatherLocation]);
 
   function togglePerson(id) {
     setSelectedPersons((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -100,8 +121,17 @@ export default function App() {
   const visibleEvents = useMemo(() => events.filter(visibleForEvent), [events, selectedPersons]);
   const visibleTasks = useMemo(() => tasks.filter(visibleForTask), [tasks, selectedPersons]);
 
-  function eventsOn(dateObj) { return visibleEvents.filter((e) => eventOccursOn(e, dateObj)); }
+  function eventsOn(dateObj) {
+    return visibleEvents.filter((e) => eventOccursOn(e, dateObj)).map((e) => ({ ...e, color: eventColor(e, personColor) }));
+  }
   function tasksOn(dateObj) { return visibleTasks.filter((t) => taskOccursOn(t, dateObj)); }
+  function weatherFor(dt) { return buildDayWeather(weatherHourly, dkey(dt)); }
+  function buildWeatherByDate(dts) {
+    if (!weatherHourly) return null;
+    const map = {};
+    dts.forEach((dt) => { map[dkey(dt)] = weatherFor(dt); });
+    return map;
+  }
   function isDone(taskId, personId, key) {
     return completions.some((c) => c.taskId === taskId && c.personId === personId && c.dateKey === key);
   }
@@ -170,7 +200,8 @@ export default function App() {
 
   if (loading) return <div className="loading-screen">Lade Family Planner…</div>;
   if (isKioskUrl) return <KioskView people={people} events={events} tasks={tasks} completions={completions}
-    rewards={rewards} redemptions={redemptions} adjustments={adjustments} kioskPresets={kioskPresets} />;
+    rewards={rewards} redemptions={redemptions} adjustments={adjustments} kioskPresets={kioskPresets}
+    weatherHourly={weatherHourly} />;
 
   function DayView() {
     const key = dkey(current);
@@ -186,7 +217,7 @@ export default function App() {
       <div className="day-col">
         {(mode === 'calendar' || mode === 'both') && <div>
           <div className="day-section-title">📅 Termine</div>
-          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} windowStart={windowStart} windowEnd={windowEnd} />
+          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} windowStart={windowStart} windowEnd={windowEnd} weatherByDate={buildWeatherByDate([current])} />
         </div>}
         {(mode === 'chores' || mode === 'both') && <div style={{ marginTop: 10 }}>
           <div className="day-section-title">✅ Aufgaben</div>
@@ -224,7 +255,8 @@ export default function App() {
 
   function WeekView() {
     const start = startOfWeek(current);
-    const days = [...Array(7)].map((_, i) => addDays(start, i));
+    const dayCount = workWeekOnly ? 5 : 7;
+    const days = [...Array(dayCount)].map((_, i) => addDays(start, i));
     const timelineDays = days.map((dt) => ({
       key: dkey(dt),
       dayLabel: DOW[(dt.getDay() + 6) % 7],
@@ -235,7 +267,7 @@ export default function App() {
     return (
       <div>
         {(mode === 'calendar' || mode === 'both') && (
-          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} windowStart={windowStart} windowEnd={windowEnd} />
+          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} windowStart={windowStart} windowEnd={windowEnd} weatherByDate={buildWeatherByDate(days)} />
         )}
         {(mode === 'chores' || mode === 'both') && (
           <div className="week-grid" style={{ marginTop: mode === 'both' ? 16 : 0 }}>
@@ -291,7 +323,7 @@ export default function App() {
                 onClick={() => setSelectedDay(dt)}>
                 <span className="mc-num">{dt.getDate()}</span>
                 <div className="mc-dots">
-                  {showEv && evs.slice(0, 4).map((e) => <span key={e.id} className="mc-dot" style={{ background: e.type === 'special' ? 'var(--coral)' : 'var(--p1)' }}></span>)}
+                  {showEv && evs.slice(0, 4).map((e) => <span key={e.id} className="mc-dot" style={{ background: e.color }}></span>)}
                   {showCh && tks.slice(0, 4).map((pid, i) => <span key={i} className="mc-dot" style={{ background: personColor(pid) }}></span>)}
                 </div>
                 {(evs.length + tks.length) > 0 && <span className="mc-count">{evs.length ? evs.length + ' Termin(e)' : ''}{evs.length && tks.length ? ' · ' : ''}{tks.length ? tks.length + ' Aufgabe(n)' : ''}</span>}
@@ -313,7 +345,7 @@ export default function App() {
         <h3>{fmtLabelDay(dt)}</h3>
         <div className="day-detail-list">
           {(mode === 'calendar' || mode === 'both') && evs.map((e) => (
-            <div className="event-row" style={{ '--dot': e.type === 'special' ? 'var(--coral)' : 'var(--p1)' }} key={e.id}>
+            <div className="event-row" style={{ '--dot': e.color }} key={e.id}>
               <span className="time">{e.time || '–'}</span><span className="name">{e.title}</span>
             </div>
           ))}
@@ -397,6 +429,11 @@ export default function App() {
             <button className={period === 'month' ? 'active' : ''} onClick={() => setPeriod('month')}>Monat</button>
             <button className={period === 'year' ? 'active' : ''} onClick={() => setPeriod('year')}>Jahr</button>
           </div>
+          {period === 'week' && (
+            <button className={'icon-btn' + (workWeekOnly ? ' tw-active' : '')} onClick={() => setWorkWeekOnly((w) => !w)}>
+              {workWeekOnly ? 'Nur Mo–Fr ✓' : 'Nur Mo–Fr'}
+            </button>
+          )}
           {(period === 'day' || period === 'week') && (mode === 'calendar' || mode === 'both') && (
             <div className="tl-resolution-picker">
               <span className="help-text">Raster:</span>
@@ -440,6 +477,8 @@ export default function App() {
           {isAdmin && <MembersManager people={people} />}
 
           <GoogleCalendarPanel people={people} />
+
+          {isAdmin && <WeatherSettings location={weatherLocation} />}
 
           <div className="card">
             <h3>🪙 Punktestand</h3>

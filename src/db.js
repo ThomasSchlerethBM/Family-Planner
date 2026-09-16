@@ -1,6 +1,14 @@
 import { db } from './firebase';
 import { ref, onValue, push, set, remove, update, get } from 'firebase/database';
 
+// Subscribes to a single-object path (e.g. "settings/weather") and calls back
+// with its raw value (or null if absent) - unlike listenList, does not
+// array-ify children.
+export function listenValue(path, callback) {
+  const r = ref(db, path);
+  return onValue(r, (snap) => callback(snap.exists() ? snap.val() : null));
+}
+
 // Subscribes to a list path (e.g. "events") and calls back with an array
 // of {id, ...fields}. Returns an unsubscribe function.
 export function listenList(path, callback) {

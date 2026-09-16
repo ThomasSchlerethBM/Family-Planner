@@ -29,6 +29,19 @@ mehrerer Kinder nebeneinander gut vergleichen.
   (analog zu Outlooks "Ganztägig"-Zeile), statt in der Zeitachse zu verschwinden
 - Sich überschneidende Termine werden automatisch nebeneinander statt
   übereinander angezeigt
+- **Nur Werktage (Mo–Fr)**: in der Wochenansicht (Hauptmodus und Kiosk-Modus)
+  über den Knopf "Nur Mo–Fr" Samstag/Sonntag ausblenden, um mehr Platz für die
+  restlichen Tage zu haben – erneut klicken schaltet zurück auf alle 7 Tage
+- **Wetter-Mini-Tabelle**: zeigt pro Tag in der Kopfzeile der Zeitleiste
+  Wettericon + Temperatur für 🌅 morgens, ☀️ mittags und 🌙 abends (Vorhersage
+  bis 16 Tage im Voraus, darüber hinaus bleibt die Zelle leer). Dafür einmalig
+  im Admin-Modus in der Seitenleiste unter **🌤️ Wetter-Standort** einen Ort
+  eingeben (z. B. "Bruckmühl") – die Wetterdaten kommen kostenlos von
+  [Open-Meteo](https://open-meteo.com), ohne eigenen API-Key
+- **Termine in Personenfarbe**: Termine werden jetzt in der Farbe der ersten
+  zugewiesenen Person eingefärbt (statt nach Sonder-/Standardtermin). Termine
+  ohne zugewiesene Person (z. B. "Müllabfuhr") behalten die bisherige
+  Sonder-/Standard-Farbgebung
 - Die Aufgaben-Darstellung (Nur Aufgaben / Beides) bleibt wie bisher als
   kompakte Liste unterhalb bzw. daneben bestehen, da Aufgaben keine exakte
   Uhrzeit haben (nur Morgens/Mittags/Abends)

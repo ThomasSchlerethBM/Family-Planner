@@ -45,3 +45,13 @@ export function weekdaysSummary(weekdays) {
   if (sameWeekdaySet(weekdays, WEEKDAY_PRESETS.weekend)) return 'am Wochenende';
   return WEEKDAY_LABELS_MON_FIRST.filter((w) => weekdays.includes(w.value)).map((w) => w.label).join(', ');
 }
+
+// Color an event by its first assigned person, falling back to the
+// Sonder-/Standardtermin type color for family-wide events with nobody assigned.
+export function eventColor(event, personColorFn) {
+  if (event.personIds && event.personIds.length > 0) {
+    const c = personColorFn(event.personIds[0]);
+    if (c) return c;
+  }
+  return event.type === 'special' ? 'var(--coral)' : 'var(--p1)';
+}

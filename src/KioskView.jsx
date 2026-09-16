@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { dkey, sameDay, addDays, startOfWeek, startOfMonth, fmtLabelDay, fmtLabelWeek, fmtLabelMonth, DOW, completionKey } from './dateUtils';
 import { removeItem, setItem, pushItem } from './db';
 import { groupByTimeOfDay } from './timeOfDay';
-import { taskOccursOn, eventOccursOn } from './occurrence';
+import { taskOccursOn, eventOccursOn, eventColor } from './occurrence';
 import Timeline, { RESOLUTIONS } from './Timeline.jsx';
 import TimeWindowControl from './TimeWindowControl.jsx';
+import { buildDayWeather } from './weather.js';
 
 const today = new Date();
 const BAR_HEIGHT_PX = 340;
@@ -27,7 +28,7 @@ function saveLS(key, value) {
 }
 function timeToMin(t) { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); }
 
-export default function KioskView({ people: allPeople, events, tasks, completions, rewards, redemptions, adjustments, kioskPresets }) {
+export default function KioskView({ people: allPeople, events, tasks, completions, rewards, redemptions, adjustments, kioskPresets, weatherHourly }) {
   const [activeFilter, setActiveFilter] = useState(getUrlPeopleFilter()); // null = everyone
   const [screen, setScreen] = useState('agenda'); // 'agenda' | 'points'
   const [agendaMode, setAgendaMode] = useState(() => loadLS('agendaMode', 'both')); // 'both' | 'calendar' | 'chores'
@@ -35,6 +36,7 @@ export default function KioskView({ people: allPeople, events, tasks, completion
   const [calPeriod, setCalPeriod] = useState(() => loadLS('period', 'day')); // 'day' | 'week' | 'month'
   const [resolutionMinutes, setResolutionMinutes] = useState(() => loadLS('resolution', 15));
   const [timeWindow, setTimeWindow] = useState(() => loadLS('window', null));
+  const [workWeekOnly, setWorkWeekOnly] = useState(() => loadLS('workWeekOnly', false));
   const [redeemPerson, setRedeemPerson] = useState(null);
   const [selectedMonthDay, setSelectedMonthDay] = useState(null);
 
@@ -43,15 +45,25 @@ export default function KioskView({ people: allPeople, events, tasks, completion
   useEffect(() => saveLS('period', calPeriod), [calPeriod]);
   useEffect(() => saveLS('resolution', resolutionMinutes), [resolutionMinutes]);
   useEffect(() => saveLS('window', timeWindow), [timeWindow]);
+  useEffect(() => saveLS('workWeekOnly', workWeekOnly), [workWeekOnly]);
 
   const filterIds = activeFilter;
   const people = filterIds ? allPeople.filter((p) => filterIds.includes(p.id)) : allPeople;
   const key = dkey(today);
 
+  function personColor(id) { const p = allPeople.find((p) => p.id === id); return p ? p.color : 'var(--text-faint)'; }
   function eventVisible(e) {
     return !filterIds || !e.personIds || e.personIds.length === 0 || e.personIds.some((id) => filterIds.includes(id));
   }
-  function eventsOnDate(dt) { return events.filter((e) => eventOccursOn(e, dt) && eventVisible(e)); }
+  function eventsOnDate(dt) {
+    return events.filter((e) => eventOccursOn(e, dt) && eventVisible(e)).map((e) => ({ ...e, color: eventColor(e, personColor) }));
+  }
+  function buildWeatherByDate(dts) {
+    if (!weatherHourly) return null;
+    const map = {};
+    dts.forEach((dt) => { map[dkey(dt)] = buildDayWeather(weatherHourly, dkey(dt)); });
+    return map;
+  }
 
   const tks = tasks.filter((t) => taskOccursOn(t, today));
   const windowStart = timeWindow ? timeToMin(timeWindow.start) : null;
@@ -78,20 +90,24 @@ export default function KioskView({ people: allPeople, events, tasks, completion
 
   // ---- build the day list for the Timeline (Tag = 1 Spalte, Woche = 7 Spalten) ----
   let timelineDays = [];
+  let timelineDateObjs = [];
   let calLabel = '';
   if (calPeriod === 'day') {
     timelineDays = [{
       key, dayLabel: DOW[(today.getDay() + 6) % 7], dateLabel: `${today.getDate()}.${today.getMonth() + 1}.`,
       isToday: true, events: eventsOnDate(today),
     }];
+    timelineDateObjs = [today];
     calLabel = fmtLabelDay(today);
   } else if (calPeriod === 'week') {
     const start = startOfWeek(today);
-    const days = [...Array(7)].map((_, i) => addDays(start, i));
+    const dayCount = workWeekOnly ? 5 : 7;
+    const days = [...Array(dayCount)].map((_, i) => addDays(start, i));
     timelineDays = days.map((dt) => ({
       key: dkey(dt), dayLabel: DOW[(dt.getDay() + 6) % 7], dateLabel: `${dt.getDate()}.${dt.getMonth() + 1}.`,
       isToday: sameDay(dt, today), events: eventsOnDate(dt),
     }));
+    timelineDateObjs = days;
     calLabel = fmtLabelWeek(today);
   } else {
     calLabel = fmtLabelMonth(today);
@@ -138,6 +154,11 @@ export default function KioskView({ people: allPeople, events, tasks, completion
                 <button className={calPeriod === 'month' ? 'active' : ''} onClick={() => setCalPeriod('month')}>Monat</button>
               </div>
             )}
+            {agendaMode !== 'chores' && calPeriod === 'week' && (
+              <button className={'kiosk-preset-btn' + (workWeekOnly ? ' active' : '')} onClick={() => setWorkWeekOnly((w) => !w)}>
+                {workWeekOnly ? 'Nur Mo–Fr ✓' : 'Nur Mo–Fr'}
+              </button>
+            )}
             {agendaMode !== 'chores' && calPeriod !== 'month' && (
               <div className="tl-resolution-picker">
                 <span className="help-text">Raster:</span>
@@ -165,7 +186,8 @@ export default function KioskView({ people: allPeople, events, tasks, completion
             {agendaMode !== 'chores' && (
               <div className="kiosk-col kiosk-col-cal">
                 {(calPeriod === 'day' || calPeriod === 'week') && (
-                  <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} windowStart={windowStart} windowEnd={windowEnd} />
+                  <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} windowStart={windowStart} windowEnd={windowEnd}
+                    weatherByDate={buildWeatherByDate(timelineDateObjs)} />
                 )}
                 {calPeriod === 'month' && (
                   <KioskMonthView eventsOnDate={eventsOnDate} selected={selectedMonthDay} onSelect={setSelectedMonthDay} />
@@ -252,7 +274,7 @@ function KioskMonthView({ eventsOnDate, selected, onSelect }) {
               onClick={() => onSelect(dt)}>
               <span className="mc-num">{dt.getDate()}</span>
               <div className="mc-dots">
-                {evs.slice(0, 4).map((e) => <span key={e.id} className="mc-dot" style={{ background: e.type === 'special' ? 'var(--coral)' : 'var(--p1)' }}></span>)}
+                {evs.slice(0, 4).map((e) => <span key={e.id} className="mc-dot" style={{ background: e.color }}></span>)}
               </div>
               {evs.length > 0 && <span className="mc-count">{evs.length} Termin(e)</span>}
             </div>
@@ -265,7 +287,7 @@ function KioskMonthView({ eventsOnDate, selected, onSelect }) {
           <div className="day-detail-list">
             {selectedEvents.length === 0 && <div className="empty-note">Keine Termine an diesem Tag.</div>}
             {selectedEvents.map((e) => (
-              <div className="event-row" style={{ '--dot': e.type === 'special' ? 'var(--coral)' : 'var(--p1)' }} key={e.id}>
+              <div className="event-row" style={{ '--dot': e.color }} key={e.id}>
                 <span className="time">{e.time || '–'}</span><span className="name">{e.title}</span>
               </div>
             ))}

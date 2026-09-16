@@ -45,7 +45,7 @@ function layoutLanes(items) {
  * windowStart/windowEnd: optional minutes-from-midnight to force a fixed visible
  * range (e.g. 8:00-16:00) instead of auto-sizing to the events present.
  */
-export default function Timeline({ days, resolutionMinutes, onEventClick, windowStart, windowEnd }) {
+export default function Timeline({ days, resolutionMinutes, onEventClick, windowStart, windowEnd, weatherByDate }) {
   const hasWindow = windowStart != null && windowEnd != null && windowEnd > windowStart;
 
   const { startMin, endMin, timed } = useMemo(() => {
@@ -96,11 +96,25 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
   return (
     <div className="tl-wrap">
       <div className="tl-grid-cols" style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}>
-        <div className="tl-corner"></div>
+        <div className="tl-corner">
+          {weatherByDate && <div className="tl-weather-legend">🌅 ☀️ 🌙</div>}
+        </div>
         {days.map((day) => (
           <div key={day.key} className={'tl-daycol-head' + (day.isToday ? ' today' : '')}>
             <div className="tl-daycol-name">{day.dayLabel}</div>
             <div className="tl-daycol-date">{day.dateLabel}</div>
+            {weatherByDate && weatherByDate[day.key] && (
+              <div className="tl-weather-row">
+                {['morning', 'midday', 'evening'].map((part) => {
+                  const w = weatherByDate[day.key][part];
+                  return (
+                    <span key={part} className="tl-weather-cell">
+                      {w ? <>{w.icon}<span className="tl-weather-temp">{w.temp}°</span></> : '–'}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -111,7 +125,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
           {days.map((day) => (
             <div key={day.key} className="tl-allday-cell">
               {untimedByDay[day.key].map((e) => (
-                <div key={e.id} className="tl-allday-chip" style={{ '--dot': e.type === 'special' ? 'var(--coral)' : 'var(--p1)' }}
+                <div key={e.id} className="tl-allday-chip" style={{ '--dot': e.color || 'var(--p1)' }}
                   onClick={() => onEventClick && onEventClick(e)}>
                   {e.title}
                 </div>
@@ -145,7 +159,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
                   style={{
                     top, height,
                     left: `${e.lane * widthPct}%`, width: `calc(${widthPct}% - 4px)`,
-                    '--dot': e.type === 'special' ? 'var(--coral)' : 'var(--p1)',
+                    '--dot': e.color || 'var(--p1)',
                   }}
                   onClick={() => onEventClick && onEventClick(e)}>
                   <span className="tl-event-time">{e.time}</span>

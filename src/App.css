@@ -335,6 +335,10 @@ body{
 .tl-daycol-head.today .tl-daycol-name, .tl-daycol-head.today .tl-daycol-date{color:var(--gold);}
 .tl-daycol-name{font-weight:800; font-size:13px; color:var(--text);}
 .tl-daycol-date{font-family:'Inter'; font-size:11px; color:var(--text-faint); font-weight:600;}
+.tl-weather-row{display:flex; justify-content:center; gap:6px; margin-top:5px;}
+.tl-weather-cell{font-size:11px; font-weight:700; color:var(--text-dim); display:flex; align-items:center; gap:1px;}
+.tl-weather-temp{font-family:'Inter'; font-size:10px; color:var(--text-faint);}
+.tl-weather-legend{font-size:10px; text-align:center; padding-top:4px; opacity:0.7;}
 .tl-gutter-label{font-size:10.5px; font-weight:700; color:var(--text-faint); text-align:right; padding:6px 8px 6px 0; border-bottom:1px solid var(--line);}
 .tl-allday-cell{border-left:1px solid var(--line); border-bottom:1px solid var(--line); padding:5px; display:flex; flex-direction:column; gap:4px; min-height:30px;}
 .tl-allday-chip{font-size:11px; font-weight:700; padding:4px 8px; border-radius:8px; background:var(--card-2); border-left:3px solid var(--dot); cursor:pointer;}
@@ -363,3 +367,4 @@ body{
 }
 .tw-control .icon-btn{padding:7px 12px; font-size:12px;}
 .tw-control .icon-btn.tw-active{background:var(--text); color:#fff; border-color:var(--text);}
+.icon-btn.tw-active{background:var(--text); color:#fff; border-color:var(--text);}
