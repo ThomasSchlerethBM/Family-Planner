@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { setItem, removeItem, getKeys } from './db';
+import { setItem, removeItem, getKeys, getList } from './db';
 import {
   connectGoogleCalendar, refreshGoogleToken, getStoredToken,
   isConnected, disconnectGoogleCalendar, fetchGoogleEvents,
@@ -25,7 +25,7 @@ function toLocalDateParts(gEvent, field) {
   return { date: '', time: '' };
 }
 
-export default function GoogleCalendarPanel({ people, events }) {
+export default function GoogleCalendarPanel({ people }) {
   const [connected, setConnected] = useState({});
   const [syncing, setSyncing] = useState({});
   const [lastSync, setLastSync] = useState({});
@@ -55,7 +55,13 @@ export default function GoogleCalendarPanel({ people, events }) {
       const timeMax = new Date(Date.now() + SYNC_WINDOW_FUTURE_DAYS * 86400000).toISOString();
       const items = await fetchGoogleEvents(token, timeMin, timeMax);
       const excludedIds = await getKeys('googleExcluded');
-      const lockedIds = new Set(events.filter((e) => e.manualOverride).map((e) => e.id));
+      // Always read the *current* database state right before writing, rather
+      // than relying on the events prop - that can be a render or two behind
+      // (e.g. while another person's sync is also in flight), which previously
+      // caused freshly-imported events to be misjudged as stale and deleted
+      // again moments after they appeared.
+      const currentEvents = await getList('events');
+      const lockedIds = new Set(currentEvents.filter((e) => e.manualOverride).map((e) => e.id));
 
       const freshIds = new Set();
       for (const it of items) {
@@ -75,8 +81,11 @@ export default function GoogleCalendarPanel({ people, events }) {
           googleOwner: personId,
         });
       }
-      // remove events previously imported for this person that are gone now
-      const stale = events.filter((e) => e.googleOwner === personId && !freshIds.has(e.id));
+      // remove events previously imported for this person that are gone now -
+      // re-read once more so we're comparing against the state as it stands
+      // right after our own writes above, not the pre-sync snapshot.
+      const afterWrite = await getList('events');
+      const stale = afterWrite.filter((e) => e.googleOwner === personId && !freshIds.has(e.id));
       for (const s of stale) await removeItem('events', s.id);
 
       setLastSync((s) => ({ ...s, [personId]: Date.now() }));
@@ -90,7 +99,7 @@ export default function GoogleCalendarPanel({ people, events }) {
     } finally {
       setSyncing((s) => ({ ...s, [personId]: false }));
     }
-  }, [events]);
+  }, []);
 
   // auto-sync once on load for anyone already connected, then every 15 min
   useEffect(() => {

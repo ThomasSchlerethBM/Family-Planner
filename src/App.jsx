@@ -439,7 +439,7 @@ export default function App() {
         <div className="sidebar">
           {isAdmin && <MembersManager people={people} />}
 
-          <GoogleCalendarPanel people={people} events={events} />
+          <GoogleCalendarPanel people={people} />
 
           <div className="card">
             <h3>🪙 Punktestand</h3>

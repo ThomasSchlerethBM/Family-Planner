@@ -29,6 +29,16 @@ export function removeItem(path, id) {
   return remove(ref(db, `${path}/${id}`));
 }
 
+// One-time read of a list path, returning the current, authoritative data
+// straight from the database (not a possibly-stale React state snapshot).
+// Used where correctness matters more than reactivity, e.g. deciding which
+// synced items are stale during a Google Calendar sync.
+export async function getList(path) {
+  const snap = await get(ref(db, path));
+  const val = snap.val() || {};
+  return Object.entries(val).map(([id, v]) => ({ id, ...v }));
+}
+
 // Reads a path and returns just its keys (used e.g. for the googleExcluded set,
 // which is a simple {id: true} map rather than a list of objects).
 export async function getKeys(path) {
