@@ -330,6 +330,7 @@ body{
 .kiosk-detail-row{display:flex; align-items:center; gap:10px; font-size:16px; font-weight:600; color:var(--text); padding:8px 0; border-bottom:1px solid var(--line);}
 .kiosk-detail-row:last-of-type{border-bottom:none;}
 .kiosk-detail-icon{font-size:18px; width:24px; text-align:center; flex-shrink:0;}
+.kiosk-detail-desc{margin-top:14px; padding-top:14px; border-top:1px solid var(--line); font-size:14px; color:var(--text-dim); line-height:1.5; white-space:pre-wrap;}
 
 ::-webkit-scrollbar{width:8px;}
 ::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}

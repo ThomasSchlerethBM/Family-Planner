@@ -703,6 +703,7 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
   const [locked, setLocked] = useState(existing?.manualOverride || false);
   const [recurrence, setRecurrence] = useState(existing?.recurrence || 'once');
   const [weekdays, setWeekdays] = useState(existing?.weekdays || WEEKDAY_PRESETS.weekdays);
+  const [description, setDescription] = useState(existing?.description || '');
   const isGoogle = existing?.source === 'google';
   const timeInvalid = time && endTime && diffMinutes(time, endTime) <= 0;
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
@@ -764,6 +765,10 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
           </select>
         </div>
         <div className="field">
+          <label>Beschreibung (optional)</label>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="z. B. Adresse, Notizen…" />
+        </div>
+        <div className="field">
           <label>Betrifft wen?</label>
           <div className="person-pick">
             {people.map((p) => (
@@ -786,6 +791,7 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
               title, time, type, personIds, source: existing?.source || 'local', manualOverride: locked,
               recurrence, date: recurrence === 'once' ? date : null, weekdays: recurrence === 'weekly' ? weekdays : null,
               durationMinutes: time ? (endTime ? diffMinutes(time, endTime) : 60) : null,
+              description: description.trim() || null,
             })}>
             Speichern
           </button>

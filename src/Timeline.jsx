@@ -162,7 +162,6 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
                     '--dot': e.color || 'var(--p1)',
                   }}
                   onClick={() => onEventClick && onEventClick(e)}>
-                  <span className="tl-event-time">{e.time}</span>
                   <span className="tl-event-title">{e.title}</span>
                 </div>
               );

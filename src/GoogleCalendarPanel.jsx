@@ -8,21 +8,36 @@ import {
 const SYNC_WINDOW_PAST_DAYS = 7;
 const SYNC_WINDOW_FUTURE_DAYS = 120;
 
+function stripHtml(html) {
+  if (!html) return null;
+  const text = html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+  return text || null;
+}
+
 function toLocalDateParts(gEvent, field) {
   // Google gives either {date: 'YYYY-MM-DD'} for all-day events
   // or {dateTime: 'YYYY-MM-DDTHH:MM:SS+TZ'} for timed events.
   const node = gEvent[field];
-  if (!node) return { date: '', time: '' };
-  if (node.date) return { date: node.date, time: '' };
+  if (!node) return { date: '', time: '', ms: null };
+  if (node.date) return { date: node.date, time: '', ms: null };
   if (node.dateTime) {
     const d = new Date(node.dateTime);
     const pad = (n) => (n < 10 ? '0' + n : '' + n);
     return {
       date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
       time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+      ms: d.getTime(),
     };
   }
-  return { date: '', time: '' };
+  return { date: '', time: '', ms: null };
 }
 
 export default function GoogleCalendarPanel({ people }) {
@@ -70,11 +85,15 @@ export default function GoogleCalendarPanel({ people }) {
         freshIds.add(id);
         if (lockedIds.has(id)) continue; // admin locked this one, keep local edits
 
-        const { date, time } = toLocalDateParts(it, 'start');
+        const { date, time, ms: startMs } = toLocalDateParts(it, 'start');
         if (!date) continue;
+        const { ms: endMs } = toLocalDateParts(it, 'end');
+        const durationMinutes = (startMs && endMs && endMs > startMs) ? Math.round((endMs - startMs) / 60000) : null;
         await setItem('events', id, {
           title: it.summary || '(ohne Titel)',
           date, time,
+          durationMinutes,
+          description: stripHtml(it.description),
           personIds: [personId],
           type: 'special',
           source: 'google',

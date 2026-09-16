@@ -36,6 +36,9 @@ export default function EventDetailsModal({ event, people, onClose }) {
           <span className="kiosk-detail-icon">{event.type === 'special' ? '⭐' : '📌'}</span>
           <span>{event.type === 'special' ? 'Sondertermin' : 'Standardtermin'}</span>
         </div>
+        {event.description && (
+          <div className="kiosk-detail-desc">{event.description}</div>
+        )}
         <button className="btn-primary" style={{ marginTop: 16 }} onClick={onClose}>Schließen</button>
       </div>
     </div>
