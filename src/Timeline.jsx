@@ -95,7 +95,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
 
   return (
     <div className="tl-wrap">
-      <div className="tl-grid-cols" style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}>
+      <div className="tl-grid-cols" style={{ gridTemplateColumns: `68px repeat(${days.length}, 1fr)` }}>
         <div className="tl-corner">
           {weatherByDate && <div className="tl-weather-legend">🌅 ☀️ 🌙</div>}
         </div>
@@ -120,7 +120,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
       </div>
 
       {hasUntimed && (
-        <div className="tl-grid-cols" style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}>
+        <div className="tl-grid-cols" style={{ gridTemplateColumns: `68px repeat(${days.length}, 1fr)` }}>
           <div className="tl-gutter-label tl-allday-label">Ohne Zeit</div>
           {days.map((day) => (
             <div key={day.key} className="tl-allday-cell">
@@ -135,7 +135,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
         </div>
       )}
 
-      <div className="tl-grid-cols" style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}>
+      <div className="tl-grid-cols" style={{ gridTemplateColumns: `68px repeat(${days.length}, 1fr)` }}>
         <div className="tl-gutter" style={{ height: gridHeight }}>
           {hourMarks.map((m) => (
             <div key={m} className="tl-hour-label" style={{ top: (m - startMin) * PX_PER_MIN }}>{formatMinutes(m)}</div>

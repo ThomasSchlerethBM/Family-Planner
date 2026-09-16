@@ -42,6 +42,18 @@ mehrerer Kinder nebeneinander gut vergleichen.
   zugewiesenen Person eingefärbt (statt nach Sonder-/Standardtermin). Termine
   ohne zugewiesene Person (z. B. "Müllabfuhr") behalten die bisherige
   Sonder-/Standard-Farbgebung
+- **Klügerer Endzeit-Vorschlag**: Beim Setzen der Startzeit schlägt die App
+  als Endzeit automatisch den Beginn des nächsten Termins am selben Tag vor
+  (statt immer pauschal +60 Minuten) – das verhindert, dass aufeinanderfolgende
+  Termine wie Schulstunden sich künstlich überschneiden und unnötig
+  nebeneinander statt sauber untereinander dargestellt werden. Bereits
+  bestehende Termine mit ungenauer Endzeit einmalig im Admin-Modus öffnen und
+  die Endzeit korrigieren, dann verschwindet die Überschneidung
+- **Termin-Details per Klick**: Auf einen Termin in der Zeitleiste oder
+  Monatsansicht klicken zeigt (auch ohne Admin-Rechte) ein Detail-Fenster mit
+  groß dargestelltem Titel, vollständiger Start- **und** Endzeit, Personen und
+  Terminart. Im Admin-Modus öffnet ein Klick stattdessen weiterhin den
+  Bearbeiten-Dialog
 - Die Aufgaben-Darstellung (Nur Aufgaben / Beides) bleibt wie bisher als
   kompakte Liste unterhalb bzw. daneben bestehen, da Aufgaben keine exakte
   Uhrzeit haben (nur Morgens/Mittags/Abends)

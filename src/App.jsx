@@ -17,6 +17,7 @@ import Timeline, { RESOLUTIONS } from './Timeline.jsx';
 import TimeWindowControl from './TimeWindowControl.jsx';
 import WeatherSettings from './WeatherSettings.jsx';
 import { fetchHourlyWeather, buildDayWeather } from './weather.js';
+import EventDetailsModal from './EventDetailsModal.jsx';
 
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
@@ -49,6 +50,7 @@ export default function App() {
   const [workWeekOnly, setWorkWeekOnly] = useState(false);
   const [weatherLocation, setWeatherLocation] = useState(null); // {lat, lon, label}
   const [weatherHourly, setWeatherHourly] = useState(null);
+  const [detailEvent, setDetailEvent] = useState(null);
   const [selectedPersons, setSelectedPersons] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
 
@@ -217,7 +219,7 @@ export default function App() {
       <div className="day-col">
         {(mode === 'calendar' || mode === 'both') && <div>
           <div className="day-section-title">📅 Termine</div>
-          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} windowStart={windowStart} windowEnd={windowEnd} weatherByDate={buildWeatherByDate([current])} />
+          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : setDetailEvent} windowStart={windowStart} windowEnd={windowEnd} weatherByDate={buildWeatherByDate([current])} />
         </div>}
         {(mode === 'chores' || mode === 'both') && <div style={{ marginTop: 10 }}>
           <div className="day-section-title">✅ Aufgaben</div>
@@ -267,7 +269,7 @@ export default function App() {
     return (
       <div>
         {(mode === 'calendar' || mode === 'both') && (
-          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : undefined} windowStart={windowStart} windowEnd={windowEnd} weatherByDate={buildWeatherByDate(days)} />
+          <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} onEventClick={isAdmin ? openEditEvent : setDetailEvent} windowStart={windowStart} windowEnd={windowEnd} weatherByDate={buildWeatherByDate(days)} />
         )}
         {(mode === 'chores' || mode === 'both') && (
           <div className="week-grid" style={{ marginTop: mode === 'both' ? 16 : 0 }}>
@@ -513,7 +515,7 @@ export default function App() {
         </div>
       </div>
 
-      {showEventModal && <EventModal people={people} existing={editingEvent}
+      {showEventModal && <EventModal people={people} existing={editingEvent} allEvents={events}
         onClose={() => { setShowEventModal(false); setEditingEvent(null); }}
         onSave={(ev) => {
           if (editingEvent) updateItem('events', editingEvent.id, ev);
@@ -542,6 +544,7 @@ export default function App() {
           setShowRewardModal(false); setEditingReward(null);
         }} />}
       {showPinModal && <PinModal onClose={() => setShowPinModal(false)} onSubmit={tryUnlockAdmin} />}
+      {detailEvent && <EventDetailsModal event={detailEvent} people={people} onClose={() => setDetailEvent(null)} />}
       {showKioskModal && <KioskQrModal onClose={() => setShowKioskModal(false)} people={people} kioskPresets={kioskPresets}
         onSavePreset={(label, personIds) => pushItem('kioskPresets', { label, personIds })}
         onDeletePreset={(id) => removeItem('kioskPresets', id)} />}
@@ -688,7 +691,7 @@ function diffMinutes(start, end) {
   return (eh * 60 + em) - (sh * 60 + sm);
 }
 
-function EventModal({ people, onClose, onSave, onExclude, existing }) {
+function EventModal({ people, onClose, onSave, onExclude, existing, allEvents }) {
   const [title, setTitle] = useState(existing?.title || '');
   const [date, setDate] = useState(existing?.date || dkey(new Date()));
   const [time, setTime] = useState(existing?.time || '');
@@ -705,8 +708,17 @@ function EventModal({ people, onClose, onSave, onExclude, existing }) {
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
   function handleStartChange(v) {
     setTime(v);
-    // keep a sensible end time in sync when a start is picked for the first time
-    if (v && !endTime) setEndTime(addMinutesToTime(v, 60));
+    if (!v || endTime) return;
+    // Suggest the next same-day event's start as the end time (so back-to-back
+    // items like school periods don't default into a visually overlapping
+    // block); fall back to +60 min if there's nothing nearby.
+    const sameDayStarts = (allEvents || [])
+      .filter((e) => e !== existing && e.date === date && e.time && e.time > v)
+      .map((e) => e.time)
+      .sort();
+    const next = sameDayStarts[0];
+    const plusHour = addMinutesToTime(v, 60);
+    setEndTime(next && next < plusHour ? next : plusHour);
   }
   return (
     <div className="modal-bg" onClick={onClose}>

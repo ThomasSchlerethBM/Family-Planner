@@ -5,6 +5,7 @@ import { groupByTimeOfDay } from './timeOfDay';
 import { taskOccursOn, eventOccursOn, eventColor } from './occurrence';
 import Timeline, { RESOLUTIONS } from './Timeline.jsx';
 import TimeWindowControl from './TimeWindowControl.jsx';
+import EventDetailsModal from './EventDetailsModal.jsx';
 import { buildDayWeather } from './weather.js';
 
 const today = new Date();
@@ -39,6 +40,7 @@ export default function KioskView({ people: allPeople, events, tasks, completion
   const [workWeekOnly, setWorkWeekOnly] = useState(() => loadLS('workWeekOnly', false));
   const [redeemPerson, setRedeemPerson] = useState(null);
   const [selectedMonthDay, setSelectedMonthDay] = useState(null);
+  const [detailEvent, setDetailEvent] = useState(null);
 
   useEffect(() => saveLS('agendaMode', agendaMode), [agendaMode]);
   useEffect(() => saveLS('taskScale', taskScale), [taskScale]);
@@ -114,7 +116,7 @@ export default function KioskView({ people: allPeople, events, tasks, completion
   }
 
   return (
-    <div className="kiosk">
+    <div className={'kiosk' + (agendaMode !== 'both' && screen === 'agenda' ? ' kiosk-compact' : '')}>
       <div className="kiosk-header">
         <div>
           <div className="kiosk-title">📋 Family Planner</div>
@@ -187,10 +189,11 @@ export default function KioskView({ people: allPeople, events, tasks, completion
               <div className="kiosk-col kiosk-col-cal">
                 {(calPeriod === 'day' || calPeriod === 'week') && (
                   <Timeline days={timelineDays} resolutionMinutes={resolutionMinutes} windowStart={windowStart} windowEnd={windowEnd}
+                    onEventClick={setDetailEvent}
                     weatherByDate={buildWeatherByDate(timelineDateObjs)} />
                 )}
                 {calPeriod === 'month' && (
-                  <KioskMonthView eventsOnDate={eventsOnDate} selected={selectedMonthDay} onSelect={setSelectedMonthDay} />
+                  <KioskMonthView eventsOnDate={eventsOnDate} selected={selectedMonthDay} onSelect={setSelectedMonthDay} onEventClick={setDetailEvent} />
                 )}
               </div>
             )}
@@ -241,6 +244,10 @@ export default function KioskView({ people: allPeople, events, tasks, completion
         </div>
       )}
 
+      {detailEvent && (
+        <EventDetailsModal event={detailEvent} people={allPeople} onClose={() => setDetailEvent(null)} />
+      )}
+
       {redeemPerson && (
         <RedeemModal
           person={redeemPerson}
@@ -254,7 +261,7 @@ export default function KioskView({ people: allPeople, events, tasks, completion
   );
 }
 
-function KioskMonthView({ eventsOnDate, selected, onSelect }) {
+function KioskMonthView({ eventsOnDate, selected, onSelect, onEventClick }) {
   const first = startOfMonth(today);
   const startGrid = startOfWeek(first);
   const cells = [...Array(42)].map((_, i) => addDays(startGrid, i));
@@ -287,7 +294,7 @@ function KioskMonthView({ eventsOnDate, selected, onSelect }) {
           <div className="day-detail-list">
             {selectedEvents.length === 0 && <div className="empty-note">Keine Termine an diesem Tag.</div>}
             {selectedEvents.map((e) => (
-              <div className="event-row" style={{ '--dot': e.color }} key={e.id}>
+              <div className="event-row" style={{ '--dot': e.color, cursor: 'pointer' }} key={e.id} onClick={() => onEventClick && onEventClick(e)}>
                 <span className="time">{e.time || '–'}</span><span className="name">{e.title}</span>
               </div>
             ))}
@@ -394,3 +401,5 @@ function RedeemModal({ person, points, rewards, onRedeem, onClose }) {
     </div>
   );
 }
+
+
