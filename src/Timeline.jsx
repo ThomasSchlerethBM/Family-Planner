@@ -26,17 +26,37 @@ function formatMinutes(mins) {
 
 // Simple interval-graph "lane" layout so overlapping events sit side by side
 // instead of on top of each other.
+// Groups events into clusters of mutually-overlapping items (transitively -
+// if A overlaps B and B overlaps C, all three share a cluster even if A and
+// C don't directly overlap), then assigns lanes only within each cluster.
+// This means an event with nothing overlapping it gets the full day-column
+// width, even if other events later that same day do overlap each other.
 function layoutLanes(items) {
   const sorted = [...items].sort((a, b) => a.startMin - b.startMin);
-  const laneEnds = [];
-  const placed = sorted.map((item) => {
-    let lane = laneEnds.findIndex((end) => end <= item.startMin);
-    if (lane === -1) { lane = laneEnds.length; laneEnds.push(item.endMin); }
-    else laneEnds[lane] = item.endMin;
-    return { ...item, lane };
+  const clusters = [];
+  sorted.forEach((item) => {
+    let cluster = clusters.find((c) => item.startMin < c.maxEnd);
+    if (!cluster) {
+      cluster = { events: [], maxEnd: -Infinity };
+      clusters.push(cluster);
+    }
+    cluster.events.push(item);
+    cluster.maxEnd = Math.max(cluster.maxEnd, item.endMin);
   });
-  const totalLanes = laneEnds.length || 1;
-  return placed.map((p) => ({ ...p, totalLanes }));
+
+  const result = [];
+  clusters.forEach((cluster) => {
+    const laneEnds = [];
+    const placed = cluster.events.map((item) => {
+      let lane = laneEnds.findIndex((end) => end <= item.startMin);
+      if (lane === -1) { lane = laneEnds.length; laneEnds.push(item.endMin); }
+      else laneEnds[lane] = item.endMin;
+      return { ...item, lane };
+    });
+    const totalLanes = laneEnds.length || 1;
+    placed.forEach((p) => result.push({ ...p, totalLanes }));
+  });
+  return result;
 }
 
 /**

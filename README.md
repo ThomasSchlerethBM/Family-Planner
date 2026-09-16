@@ -28,7 +28,12 @@ mehrerer Kinder nebeneinander gut vergleichen.
 - **"Ohne Zeit"-Zeile**: Termine ohne Uhrzeit erscheinen oben als Chips
   (analog zu Outlooks "Ganztägig"-Zeile), statt in der Zeitachse zu verschwinden
 - Sich überschneidende Termine werden automatisch nebeneinander statt
-  übereinander angezeigt
+  übereinander angezeigt – aber nur die Termine, die sich **wirklich**
+  überschneiden: ein einzelner Termin ohne Überschneidung nutzt die volle
+  Spaltenbreite, auch wenn am selben Tag später mehrere andere Termine
+  gleichzeitig stattfinden (z. B. Vormittags-Stundenplan gut lesbar
+  untereinander, nur die tatsächlich parallelen Termine am Nachmittag teilen
+  sich die Breite)
 - **Nur Werktage (Mo–Fr)**: in der Wochenansicht (Hauptmodus und Kiosk-Modus)
   über den Knopf "Nur Mo–Fr" Samstag/Sonntag ausblenden, um mehr Platz für die
   restlichen Tage zu haben – erneut klicken schaltet zurück auf alle 7 Tage
