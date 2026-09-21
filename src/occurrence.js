@@ -55,3 +55,31 @@ export function eventColor(event, personColorFn) {
   }
   return event.type === 'special' ? 'var(--coral)' : 'var(--p1)';
 }
+
+// A task can be temporarily reassigned for a single day (e.g. a parent takes
+// over a child's unfinished chore) without changing who it's normally
+// assigned to. Reassignments are stored as {id: "<taskId>__<dateKey>__<originalPersonId>", newPersonId}.
+export function reassignmentKey(taskId, dateKey, originalPersonId) {
+  return `${taskId}__${dateKey}__${originalPersonId}`;
+}
+
+// For one task's original assignee on one day, returns who should actually
+// see/complete it: the reassignment target if one exists, otherwise the
+// original person.
+export function effectiveAssignee(taskId, dateKey, originalPersonId, reassignments) {
+  const r = reassignments.find((x) => x.id === reassignmentKey(taskId, dateKey, originalPersonId));
+  return r ? r.newPersonId : originalPersonId;
+}
+
+// Expands a day's tasks into individual {task, originalPersonId, effectivePersonId}
+// entries - one per originally-assigned person, with any reassignment applied.
+export function expandTaskAssignments(tasks, dateKey, reassignments) {
+  const out = [];
+  tasks.forEach((t) => {
+    (t.personIds || []).forEach((originalPersonId) => {
+      const effectivePersonId = effectiveAssignee(t.id, dateKey, originalPersonId, reassignments);
+      out.push({ task: t, originalPersonId, effectivePersonId, reassigned: effectivePersonId !== originalPersonId });
+    });
+  });
+  return out;
+}

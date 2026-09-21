@@ -18,6 +18,7 @@ import TimeWindowControl from './TimeWindowControl.jsx';
 import WeatherSettings from './WeatherSettings.jsx';
 import { fetchHourlyWeather, buildDayWeather } from './weather.js';
 import EventDetailsModal from './EventDetailsModal.jsx';
+import StatisticsModal from './StatisticsModal.jsx';
 
 // Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
 // (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
@@ -36,11 +37,13 @@ export default function App() {
   const [redemptions, setRedemptions] = useState([]);
   const [adjustments, setAdjustments] = useState([]);
   const [kioskPresets, setKioskPresets] = useState([]);
+  const [reassignments, setReassignments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [showKioskModal, setShowKioskModal] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
 
   const [mode, setMode] = useState('both');
   const [period, setPeriod] = useState('week');
@@ -85,7 +88,8 @@ export default function App() {
     const un7 = listenList('adjustments', setAdjustments);
     const un8 = listenList('kioskPresets', setKioskPresets);
     const un9 = listenValue('settings/weather', setWeatherLocation);
-    return () => { un1(); un2(); un3(); un4(); un5(); un6(); un7(); un8(); un9(); };
+    const un10 = listenList('taskReassignments', setReassignments);
+    return () => { un1(); un2(); un3(); un4(); un5(); un6(); un7(); un8(); un9(); un10(); };
   }, []);
 
   // fetch the hourly forecast once we know where "home" is, and refresh it
@@ -203,6 +207,7 @@ export default function App() {
   if (loading) return <div className="loading-screen">Lade Family Planner…</div>;
   if (isKioskUrl) return <KioskView people={people} events={events} tasks={tasks} completions={completions}
     rewards={rewards} redemptions={redemptions} adjustments={adjustments} kioskPresets={kioskPresets}
+    reassignments={reassignments}
     weatherHourly={weatherHourly} />;
 
   function DayView() {
@@ -410,6 +415,7 @@ export default function App() {
               <button className="icon-btn" onClick={() => { setEditingTask(null); setShowTaskModal(true); }}>+ Aufgabe</button>
               <button className="icon-btn" onClick={() => setShowImport(true)}>⇩ Google-Import</button>
               <button className="icon-btn" onClick={() => setShowKioskModal(true)}>🖥️ Kiosk-Modus</button>
+              <button className="icon-btn" onClick={() => setShowStatsModal(true)}>📊 Statistik</button>
               <button className="icon-btn" onClick={() => setIsAdmin(false)}>Admin: An 🔓</button>
             </>
           ) : (
@@ -545,6 +551,7 @@ export default function App() {
         }} />}
       {showPinModal && <PinModal onClose={() => setShowPinModal(false)} onSubmit={tryUnlockAdmin} />}
       {detailEvent && <EventDetailsModal event={detailEvent} people={people} onClose={() => setDetailEvent(null)} />}
+      {showStatsModal && <StatisticsModal people={people} tasks={tasks} completions={completions} adjustments={adjustments} onClose={() => setShowStatsModal(false)} />}
       {showKioskModal && <KioskQrModal onClose={() => setShowKioskModal(false)} people={people} kioskPresets={kioskPresets}
         onSavePreset={(label, personIds) => pushItem('kioskPresets', { label, personIds })}
         onDeletePreset={(id) => removeItem('kioskPresets', id)} />}

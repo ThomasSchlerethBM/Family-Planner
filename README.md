@@ -102,6 +102,16 @@ dargestellt.
 - Design im Stil von Structured.app: helles Theme, farbige abgerundete Karten,
   Zeitleisten-Optik in der Tagesansicht
 
+## Punkte-Statistik
+
+Admin-Modus → **📊 Statistik**. Zeigt für Tag/Woche/Monat/Jahr, wie viele
+Punkte jede Person im jeweiligen Zeitraum erzielt hat (aus abgehakten
+Aufgaben + manuellen Anpassungen) – als Balkendiagramm und als Tabelle mit
+genauen Zahlen. Auf einen Balken oder eine Tabellenzeile klicken zeigt darunter
+die einzelnen Einträge dieses Zeitraums (welche Aufgabe, wer, wann, wie viele
+Punkte) – so lassen sich Muster erkennen, z. B. ob an bestimmten Wochentagen
+weniger erledigt wird oder wie sich die Punkte über die Zeit entwickeln.
+
 ## Punkte manuell anpassen
 
 Admin-Modus → Seitenleiste **⚖️ Punkte anpassen**: Person auswählen, Punktzahl
@@ -141,6 +151,26 @@ was morgens, mittags oder abends ansteht.
 Bestehende Aufgaben (aus der Zeit vor diesem Update) haben noch keine
 Tageszeit gesetzt und laufen deshalb unter "📌 Jederzeit" – im Admin-Modus auf
 die jeweilige Aufgabe klicken und die Tageszeit einmalig nachtragen.
+
+## Aufgabe für heute an eine andere Person umverteilen
+
+Falls z. B. ein Kind eine Aufgabe nicht erledigt hat und stattdessen ein
+Elternteil sie übernehmen und dafür die Punkte bekommen soll: In der
+Kiosk-Ansicht (Reiter "✅ Aufgaben" bzw. "Beides") hat jede Aufgaben-Karte
+rechts ein kleines **↪**-Symbol. Antippen öffnet eine Liste aller
+Familienmitglieder – eine Person auswählen verschiebt die Aufgabe für **heute**
+dorthin (nur für diesen Tag, die reguläre Zuständigkeit bleibt unverändert).
+Die verschobene Aufgabe zeigt dann einen kleinen Hinweis "↪ von &lt;Name&gt;"
+und erscheint in der Spalte der neuen Person, wo sie ganz normal abgehakt
+werden kann – die Punkte gehen an die Person, die abhakt.
+
+Auf einem PC mit Maus lässt sich die Aufgabenkarte alternativ auch direkt per
+Drag & Drop in die Spalte einer anderen Person ziehen. Auf Tablets ist die
+↪-Schaltfläche zuverlässiger, da Drag & Drop auf Touchscreens browserabhängig
+unterschiedlich gut unterstützt wird (z. B. auf dem iPad eingeschränkt).
+
+Ein Zurückziehen auf die Ursprungsperson (oder ↪ antippen und dort erneut die
+Ursprungsperson wählen) hebt die Umverteilung wieder auf.
 
 ## Kiosk-Modus einrichten
 

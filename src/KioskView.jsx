@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { dkey, sameDay, addDays, startOfWeek, startOfMonth, fmtLabelDay, fmtLabelWeek, fmtLabelMonth, DOW, completionKey } from './dateUtils';
 import { removeItem, setItem, pushItem } from './db';
 import { groupByTimeOfDay } from './timeOfDay';
-import { taskOccursOn, eventOccursOn, eventColor } from './occurrence';
+import { taskOccursOn, eventOccursOn, eventColor, expandTaskAssignments, reassignmentKey } from './occurrence';
 import Timeline, { RESOLUTIONS } from './Timeline.jsx';
 import TimeWindowControl from './TimeWindowControl.jsx';
 import EventDetailsModal from './EventDetailsModal.jsx';
@@ -29,7 +29,7 @@ function saveLS(key, value) {
 }
 function timeToMin(t) { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); }
 
-export default function KioskView({ people: allPeople, events, tasks, completions, rewards, redemptions, adjustments, kioskPresets, weatherHourly }) {
+export default function KioskView({ people: allPeople, events, tasks, completions, rewards, redemptions, adjustments, kioskPresets, weatherHourly, reassignments }) {
   const [activeFilter, setActiveFilter] = useState(getUrlPeopleFilter()); // null = everyone
   const [screen, setScreen] = useState('agenda'); // 'agenda' | 'points'
   const [agendaMode, setAgendaMode] = useState(() => loadLS('agendaMode', 'both')); // 'both' | 'calendar' | 'chores'
@@ -41,6 +41,8 @@ export default function KioskView({ people: allPeople, events, tasks, completion
   const [redeemPerson, setRedeemPerson] = useState(null);
   const [selectedMonthDay, setSelectedMonthDay] = useState(null);
   const [detailEvent, setDetailEvent] = useState(null);
+  const [dragging, setDragging] = useState(null); // {taskId, originalPersonId}
+  const [reassignPick, setReassignPick] = useState(null); // {taskId, originalPersonId, currentPersonId}
 
   useEffect(() => saveLS('agendaMode', agendaMode), [agendaMode]);
   useEffect(() => saveLS('taskScale', taskScale), [taskScale]);
@@ -54,6 +56,7 @@ export default function KioskView({ people: allPeople, events, tasks, completion
   const key = dkey(today);
 
   function personColor(id) { const p = allPeople.find((p) => p.id === id); return p ? p.color : 'var(--text-faint)'; }
+  function personName(id) { return allPeople.find((p) => p.id === id)?.name || '?'; }
   function eventVisible(e) {
     return !filterIds || !e.personIds || e.personIds.length === 0 || e.personIds.some((id) => filterIds.includes(id));
   }
@@ -68,6 +71,18 @@ export default function KioskView({ people: allPeople, events, tasks, completion
   }
 
   const tks = tasks.filter((t) => taskOccursOn(t, today));
+  const allAssignments = expandTaskAssignments(tks, key, reassignments || []);
+
+  function applyReassignment(taskId, originalPersonId, targetPersonId) {
+    const rkey = reassignmentKey(taskId, key, originalPersonId);
+    if (targetPersonId === originalPersonId) removeItem('taskReassignments', rkey);
+    else setItem('taskReassignments', rkey, { newPersonId: targetPersonId });
+  }
+  function handleDrop(targetPersonId) {
+    if (!dragging) return;
+    applyReassignment(dragging.taskId, dragging.originalPersonId, targetPersonId);
+    setDragging(null);
+  }
   const windowStart = timeWindow ? timeToMin(timeWindow.start) : null;
   const windowEnd = timeWindow ? timeToMin(timeWindow.end) : null;
 
@@ -203,23 +218,34 @@ export default function KioskView({ people: allPeople, events, tasks, completion
                 <div className="kiosk-section-title">✅ Aufgaben heute</div>
                 <div className={'kiosk-tasks-columns kiosk-scale-' + taskScale}>
                   {people.map((person) => {
-                    const mine = tks.filter((t) => (t.personIds || []).includes(person.id));
+                    const mine = allAssignments.filter((a) => a.effectivePersonId === person.id);
                     if (mine.length === 0) return null;
-                    const groups = groupByTimeOfDay(mine, (t) => t.timeOfDay);
+                    const groups = groupByTimeOfDay(mine, (a) => a.task.timeOfDay);
                     return (
-                      <div className="kiosk-person-col" key={person.id}>
+                      <div className="kiosk-person-col" key={person.id}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => { e.preventDefault(); handleDrop(person.id); }}>
                         <div className="kiosk-person-name" style={{ color: person.color }}>{person.name}</div>
                         {groups.map((g) => (
                           <div key={g.key} className="kiosk-tod-group">
                             <div className="kiosk-tod-label">{g.label}</div>
-                            {g.items.map((t) => {
+                            {g.items.map((a) => {
+                              const t = a.task;
                               const done = isDone(t.id, person.id);
                               return (
-                                <label key={t.id} className={'kiosk-task' + (done ? ' done' : '')} style={{ '--dot': person.color }}>
+                                <label key={t.id + a.originalPersonId} className={'kiosk-task' + (done ? ' done' : '')} style={{ '--dot': person.color }}
+                                  draggable onDragStart={() => setDragging({ taskId: t.id, originalPersonId: a.originalPersonId })}>
                                   <input type="checkbox" checked={done} onChange={() => toggleTask(t, person.id)} />
                                   <span className="kiosk-task-icon">{t.icon || '✅'}</span>
-                                  <span className="kiosk-task-title">{t.title}</span>
+                                  <span className="kiosk-task-title">
+                                    {t.title}
+                                    {a.reassigned && <span className="kiosk-reassign-badge">↪ von {personName(a.originalPersonId)}</span>}
+                                  </span>
                                   <span className="kiosk-pts">+{t.points}</span>
+                                  <button type="button" className="kiosk-reassign-btn" title="Zuweisen an…"
+                                    onClick={(e) => { e.preventDefault(); setReassignPick({ taskId: t.id, originalPersonId: a.originalPersonId, currentPersonId: person.id }); }}>
+                                    ↪
+                                  </button>
                                 </label>
                               );
                             })}
@@ -246,6 +272,15 @@ export default function KioskView({ people: allPeople, events, tasks, completion
 
       {detailEvent && (
         <EventDetailsModal event={detailEvent} people={allPeople} onClose={() => setDetailEvent(null)} />
+      )}
+
+      {reassignPick && (
+        <ReassignPickerModal
+          people={allPeople}
+          currentPersonId={reassignPick.currentPersonId}
+          onPick={(targetId) => { applyReassignment(reassignPick.taskId, reassignPick.originalPersonId, targetId); setReassignPick(null); }}
+          onClose={() => setReassignPick(null)}
+        />
       )}
 
       {redeemPerson && (
@@ -403,3 +438,22 @@ function RedeemModal({ person, points, rewards, onRedeem, onClose }) {
 }
 
 
+
+function ReassignPickerModal({ people, currentPersonId, onPick, onClose }) {
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <button className="close-x" onClick={onClose}>✕</button>
+        <h3>Zuweisen an…</h3>
+        <div className="reassign-pick-list">
+          {people.map((p) => (
+            <button type="button" key={p.id} className={'reassign-pick-btn' + (p.id === currentPersonId ? ' current' : '')}
+              style={{ '--dot': p.color }} onClick={() => onPick(p.id)}>
+              <span className="dot"></span>{p.name}{p.id === currentPersonId ? ' (aktuell)' : ''}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

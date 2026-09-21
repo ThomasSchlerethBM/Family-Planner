@@ -124,7 +124,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
             <div className="tl-daycol-name">{day.dayLabel}</div>
             <div className="tl-daycol-date">{day.dateLabel}</div>
             {weatherByDate && weatherByDate[day.key] && (
-              <div className="tl-weather-row">
+              <div className={'tl-weather-row' + (days.length === 1 ? ' tl-weather-row-lg' : '')}>
                 {['morning', 'midday', 'evening'].map((part) => {
                   const w = weatherByDate[day.key][part];
                   return (
