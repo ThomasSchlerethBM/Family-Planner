@@ -94,6 +94,7 @@ export default function GoogleCalendarPanel({ people }) {
           date, time,
           durationMinutes,
           description: stripHtml(it.description),
+          location: it.location || null,
           personIds: [personId],
           type: 'special',
           source: 'google',

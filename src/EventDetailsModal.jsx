@@ -32,6 +32,12 @@ export default function EventDetailsModal({ event, people, onClose }) {
             <span>{assigned.map((p) => p.name).join(', ')}</span>
           </div>
         )}
+        {event.location && (
+          <div className="kiosk-detail-row">
+            <span className="kiosk-detail-icon">📍</span>
+            <span>{event.location}</span>
+          </div>
+        )}
         <div className="kiosk-detail-row">
           <span className="kiosk-detail-icon">{event.type === 'special' ? '⭐' : '📌'}</span>
           <span>{event.type === 'special' ? 'Sondertermin' : 'Standardtermin'}</span>

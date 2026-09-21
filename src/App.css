@@ -381,9 +381,11 @@ body{
 .tl-event{
   position:absolute; border-radius:8px; background:color-mix(in srgb, var(--dot) 14%, white);
   border-left:3px solid var(--dot); padding:3px 7px; overflow:hidden; cursor:pointer; box-sizing:border-box;
+  z-index:1;
 }
+.tl-event:hover{z-index:5;}
 .tl-event-time{font-family:'Inter'; font-size:10px; font-weight:800; color:var(--dot); display:block; line-height:1.2;}
-.tl-event-title{font-size:11.5px; font-weight:700; color:var(--text); display:block; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.tl-event-title{font-size:11.5px; font-weight:700; color:var(--text); display:block; line-height:1.25; white-space:normal; word-break:break-word; overflow-wrap:break-word;}
 .tl-resolution-picker{display:inline-flex; align-items:center; gap:6px;}
 .tl-resolution-picker .segmented button{padding:6px 11px; font-size:12px;}
 

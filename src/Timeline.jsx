@@ -177,7 +177,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
               return (
                 <div key={e.id} className="tl-event"
                   style={{
-                    top, height,
+                    top, minHeight: height,
                     left: `${e.lane * widthPct}%`, width: `calc(${widthPct}% - 4px)`,
                     '--dot': e.color || 'var(--p1)',
                   }}

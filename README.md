@@ -57,18 +57,19 @@ mehrerer Kinder nebeneinander gut vergleichen.
 - **Termin-Details per Klick**: Auf einen Termin in der Zeitleiste oder
   Monatsansicht klicken zeigt (auch ohne Admin-Rechte) ein Detail-Fenster mit
   groß dargestelltem Titel, vollständiger Start- **und** Endzeit, Personen,
-  Terminart und – falls vorhanden – der Beschreibung. Im Admin-Modus öffnet
-  ein Klick stattdessen weiterhin den Bearbeiten-Dialog, der jetzt auch ein
-  Beschreibungsfeld hat
+  Terminart und – falls vorhanden – Ort und Beschreibung. Im Admin-Modus
+  öffnet ein Klick stattdessen weiterhin den Bearbeiten-Dialog, der jetzt auch
+  ein Ort- und ein Beschreibungsfeld hat
 - **Termin-Blöcke zeigen nur noch den Titel** (keine Uhrzeit mehr direkt im
   Block) – die Zeit lässt sich anhand der Position und der Zeitspalte links
   ablesen, das schafft mehr Platz für den Titel
-- **Google-Sync überträgt jetzt die echte Dauer und Beschreibung**: bisher
-  wurden importierte Google-Termine unabhängig von ihrer tatsächlichen Länge
-  immer als 1 Stunde dargestellt (Start- und Endzeit wurden nicht aus Google
-  übernommen). Das ist behoben – 15-Minuten-Termine sind jetzt auch nur 15
-  Minuten hoch, mehrstündige entsprechend höher. Die Google-Beschreibung wird
-  ebenfalls übernommen und im Detail-Fenster angezeigt (HTML-Formatierung wird
+- **Google-Sync überträgt jetzt die echte Dauer, den Ort und die
+  Beschreibung**: bisher wurden importierte Google-Termine unabhängig von
+  ihrer tatsächlichen Länge immer als 1 Stunde dargestellt (Start- und Endzeit
+  wurden nicht aus Google übernommen), und Ort/Beschreibung fehlten ganz. Das
+  ist behoben – 15-Minuten-Termine sind jetzt auch nur 15 Minuten hoch,
+  mehrstündige entsprechend höher, und Ort sowie Beschreibung werden im
+  Detail-Fenster angezeigt (HTML-Formatierung der Google-Beschreibung wird
   dabei automatisch entfernt)
 - Die Aufgaben-Darstellung (Nur Aufgaben / Beides) bleibt wie bisher als
   kompakte Liste unterhalb bzw. daneben bestehen, da Aufgaben keine exakte
