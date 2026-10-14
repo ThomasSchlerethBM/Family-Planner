@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { dkey, sameDay, addDays, startOfWeek, startOfMonth, fmtLabelDay, fmtLabelWeek, fmtLabelMonth, DOW, completionKey } from './dateUtils';
 import { removeItem, setItem, pushItem } from './db';
 import { groupByTimeOfDay } from './timeOfDay';
-import { taskOccursOn, eventOccursOn, eventColor, expandTaskAssignments, reassignmentKey } from './occurrence';
+import { taskOccursOn, eventOccursOn, eventColor, isMultiDay, expandTaskAssignments, reassignmentKey } from './occurrence';
 import Timeline, { RESOLUTIONS } from './Timeline.jsx';
 import TimeWindowControl from './TimeWindowControl.jsx';
 import EventDetailsModal from './EventDetailsModal.jsx';
@@ -61,7 +61,7 @@ export default function KioskView({ people: allPeople, events, tasks, completion
     return !filterIds || !e.personIds || e.personIds.length === 0 || e.personIds.some((id) => filterIds.includes(id));
   }
   function eventsOnDate(dt) {
-    return events.filter((e) => eventOccursOn(e, dt) && eventVisible(e)).map((e) => ({ ...e, color: eventColor(e, personColor) }));
+    return events.filter((e) => eventOccursOn(e, dt) && eventVisible(e)).map((e) => ({ ...e, color: eventColor(e, personColor), multiDay: isMultiDay(e) }));
   }
   function buildWeatherByDate(dts) {
     if (!weatherHourly) return null;

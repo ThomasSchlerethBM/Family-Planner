@@ -11,7 +11,7 @@ import MembersManager from './MembersManager.jsx';
 import GoogleCalendarPanel from './GoogleCalendarPanel.jsx';
 import PointAdjuster from './PointAdjuster.jsx';
 import { groupByTimeOfDay } from './timeOfDay';
-import { taskOccursOn, eventOccursOn, weekdaysSummary, WEEKDAY_PRESETS, eventColor } from './occurrence';
+import { taskOccursOn, eventOccursOn, weekdaysSummary, WEEKDAY_PRESETS, eventColor, isMultiDay } from './occurrence';
 import WeekdayPicker from './WeekdayPicker.jsx';
 import Timeline, { RESOLUTIONS } from './Timeline.jsx';
 import TimeWindowControl from './TimeWindowControl.jsx';
@@ -128,7 +128,7 @@ export default function App() {
   const visibleTasks = useMemo(() => tasks.filter(visibleForTask), [tasks, selectedPersons]);
 
   function eventsOn(dateObj) {
-    return visibleEvents.filter((e) => eventOccursOn(e, dateObj)).map((e) => ({ ...e, color: eventColor(e, personColor) }));
+    return visibleEvents.filter((e) => eventOccursOn(e, dateObj)).map((e) => ({ ...e, color: eventColor(e, personColor), multiDay: isMultiDay(e) }));
   }
   function tasksOn(dateObj) { return visibleTasks.filter((t) => taskOccursOn(t, dateObj)); }
   function weatherFor(dt) { return buildDayWeather(weatherHourly, dkey(dt)); }
@@ -702,8 +702,11 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
   const [title, setTitle] = useState(existing?.title || '');
   const [date, setDate] = useState(existing?.date || dkey(new Date()));
   const [time, setTime] = useState(existing?.time || '');
+  const [endDate, setEndDate] = useState(existing?.endDate || '');
   const [endTime, setEndTime] = useState(
-    existing?.time ? addMinutesToTime(existing.time, existing?.durationMinutes ?? 60) : ''
+    existing?.endDate && existing?.endTime && existing.endTime !== '24:00'
+      ? existing.endTime
+      : existing?.time ? addMinutesToTime(existing.time, existing?.durationMinutes ?? 60) : ''
   );
   const [type, setType] = useState(existing?.type || 'special');
   const [personIds, setPersonIds] = useState(existing?.personIds || []);
@@ -713,7 +716,8 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
   const [description, setDescription] = useState(existing?.description || '');
   const [location, setLocation] = useState(existing?.location || '');
   const isGoogle = existing?.source === 'google';
-  const timeInvalid = time && endTime && diffMinutes(time, endTime) <= 0;
+  const multiDay = recurrence === 'once' && !!endDate && endDate > date;
+  const timeInvalid = !multiDay && time && endTime && diffMinutes(time, endTime) <= 0;
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
   function handleStartChange(v) {
     setTime(v);
@@ -759,6 +763,12 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
           {time && <div><label>Endzeit</label><input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></div>}
         </div>
         {timeInvalid && <div className="help-text" style={{ color: 'var(--danger)', marginTop: -6, marginBottom: 10 }}>Endzeit muss nach der Startzeit liegen.</div>}
+        {recurrence === 'once' && (
+          <div className="field">
+            <label>Enddatum (optional, für mehrtägige Termine)</label>
+            <input type="date" value={endDate} min={date} onChange={(e) => setEndDate(e.target.value)} />
+          </div>
+        )}
         {recurrence === 'weekly' && (
           <div className="field">
             <label>An welchen Tagen? (z. B. Schwimmen dienstags &amp; donnerstags)</label>
@@ -802,7 +812,9 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
             onClick={() => onSave({
               title, time, type, personIds, source: existing?.source || 'local', manualOverride: locked,
               recurrence, date: recurrence === 'once' ? date : null, weekdays: recurrence === 'weekly' ? weekdays : null,
-              durationMinutes: time ? (endTime ? diffMinutes(time, endTime) : 60) : null,
+              endDate: multiDay ? endDate : null,
+              endTime: multiDay && time ? (endTime || null) : null,
+              durationMinutes: time && !multiDay ? (endTime ? diffMinutes(time, endTime) : 60) : null,
               description: description.trim() || null,
               location: location.trim() || null,
             })}>

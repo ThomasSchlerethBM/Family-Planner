@@ -54,7 +54,17 @@ function layoutLanes(items) {
       return { ...item, lane };
     });
     const totalLanes = laneEnds.length || 1;
-    placed.forEach((p) => result.push({ ...p, totalLanes }));
+    placed.forEach((p) => {
+      // let the event widen into free lanes on its right, so it only shares
+      // width with events it actually overlaps
+      let span = 1;
+      for (let l = p.lane + 1; l < totalLanes; l++) {
+        const blocked = placed.some((q) => q.lane === l && q.startMin < p.endMin && q.endMin > p.startMin);
+        if (blocked) break;
+        span++;
+      }
+      result.push({ ...p, totalLanes, span });
+    });
   });
   return result;
 }
@@ -73,6 +83,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
       const withTimes = [];
       days.forEach((day) => {
         day.events.forEach((e) => {
+          if (e.multiDay) return;
           const sm = toMinutes(e.time);
           if (sm === null) return;
           const dur = e.durationMinutes || 60;
@@ -86,6 +97,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
     const withTimes = [];
     days.forEach((day) => {
       day.events.forEach((e) => {
+        if (e.multiDay) return;
         const sm = toMinutes(e.time);
         if (sm === null) return;
         const dur = e.durationMinutes || 60;
@@ -103,7 +115,7 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
   for (let m = startMin; m <= endMin; m += 60) hourMarks.push(m);
 
   const untimedByDay = {};
-  days.forEach((day) => { untimedByDay[day.key] = day.events.filter((e) => toMinutes(e.time) === null); });
+  days.forEach((day) => { untimedByDay[day.key] = day.events.filter((e) => !e.multiDay && toMinutes(e.time) === null); });
 
   const timedByDay = {};
   days.forEach((day) => {
@@ -112,6 +124,28 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
   });
 
   const hasUntimed = Object.values(untimedByDay).some((list) => list.length > 0);
+
+  // Multi-day events: one bar per event, spanning all visible days it covers.
+  const barMap = new Map();
+  days.forEach((day, idx) => {
+    day.events.forEach((e) => {
+      if (!e.multiDay) return;
+      const entry = barMap.get(e.id);
+      if (entry) entry.last = idx;
+      else barMap.set(e.id, { event: e, first: idx, last: idx });
+    });
+  });
+  const bars = [...barMap.values()].sort((a, b) => a.first - b.first || (b.last - b.first) - (a.last - a.first));
+  const laneEndsBars = [];
+  bars.forEach((b) => {
+    let lane = laneEndsBars.findIndex((end) => end < b.first);
+    if (lane === -1) { lane = laneEndsBars.length; laneEndsBars.push(b.last); }
+    else laneEndsBars[lane] = b.last;
+    b.lane = lane;
+    b.contLeft = !!b.event.date && b.event.date < days[0].key;
+    b.contRight = !!b.event.endDate && b.event.endDate > days[days.length - 1].key;
+  });
+  const barLaneCount = laneEndsBars.length;
 
   return (
     <div className="tl-wrap">
@@ -138,6 +172,25 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
           </div>
         ))}
       </div>
+
+      {barLaneCount > 0 && (
+        <div className="tl-bars-grid" style={{ gridTemplateColumns: `68px repeat(${days.length}, 1fr)` }}>
+          <div className="tl-gutter-label tl-allday-label" style={{ gridColumn: 1, gridRow: `1 / span ${barLaneCount}` }}>Mehrtägig</div>
+          {Array.from({ length: barLaneCount }).flatMap((_, lane) =>
+            days.map((day, d) => (
+              <div key={`c-${lane}-${d}`} className="tl-bar-cell" style={{ gridColumn: d + 2, gridRow: lane + 1 }} />
+            ))
+          )}
+          {bars.map((b) => (
+            <div key={b.event.id}
+              className={'tl-bar' + (b.contLeft ? ' cont-left' : '') + (b.contRight ? ' cont-right' : '')}
+              style={{ gridColumn: `${b.first + 2} / ${b.last + 3}`, gridRow: b.lane + 1, '--dot': b.event.color || 'var(--p1)' }}
+              onClick={() => onEventClick && onEventClick(b.event)}>
+              {b.contLeft ? '◀ ' : ''}{b.event.title}{b.contRight ? ' ▶' : ''}
+            </div>
+          ))}
+        </div>
+      )}
 
       {hasUntimed && (
         <div className="tl-grid-cols" style={{ gridTemplateColumns: `68px repeat(${days.length}, 1fr)` }}>
@@ -173,12 +226,13 @@ export default function Timeline({ days, resolutionMinutes, onEventClick, window
             {timedByDay[day.key].map((e) => {
               const top = (e.startMin - startMin) * PX_PER_MIN;
               const height = Math.max(MIN_BLOCK_HEIGHT, (e.endMin - e.startMin) * PX_PER_MIN);
-              const widthPct = 100 / e.totalLanes;
+              const laneWidthPct = 100 / e.totalLanes;
+              const widthPct = laneWidthPct * (e.span || 1);
               return (
-                <div key={e.id} className="tl-event"
+                <div key={e.id} className="tl-event" title={`${e.title} (${e.time})`}
                   style={{
-                    top, minHeight: height,
-                    left: `${e.lane * widthPct}%`, width: `calc(${widthPct}% - 4px)`,
+                    top, height,
+                    left: `${e.lane * laneWidthPct}%`, width: `calc(${widthPct}% - 4px)`,
                     '--dot': e.color || 'var(--p1)',
                   }}
                   onClick={() => onEventClick && onEventClick(e)}>

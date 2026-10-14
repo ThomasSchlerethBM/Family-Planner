@@ -385,7 +385,7 @@ body{
 }
 .tl-event:hover{z-index:5;}
 .tl-event-time{font-family:'Inter'; font-size:10px; font-weight:800; color:var(--dot); display:block; line-height:1.2;}
-.tl-event-title{font-size:11.5px; font-weight:700; color:var(--text); display:block; line-height:1.25; white-space:normal; word-break:break-word; overflow-wrap:break-word;}
+.tl-event-title{font-size:11px; font-weight:700; color:var(--text); display:block; line-height:1.2; white-space:normal; overflow-wrap:anywhere; hyphens:auto; -webkit-hyphens:auto;}
 .tl-resolution-picker{display:inline-flex; align-items:center; gap:6px;}
 .tl-resolution-picker .segmented button{padding:6px 11px; font-size:12px;}
 
@@ -432,3 +432,15 @@ body{
 .stats-detail-date{color:var(--text-faint); min-width:38px;}
 .stats-detail-label{flex:1; font-weight:600; color:var(--text);}
 .stats-detail-pts{font-weight:800;}
+
+/* Multi-day event bars (spanning several day columns, like Google Calendar) */
+.tl-bars-grid{display:grid; min-width:560px;}
+.tl-bar-cell{border-left:1px solid var(--line); border-bottom:1px solid var(--line); min-height:34px;}
+.tl-bar{
+  margin:3px 4px; padding:5px 10px; border-radius:8px; cursor:pointer; z-index:1;
+  background:color-mix(in srgb, var(--dot) 22%, white); border-left:4px solid var(--dot);
+  font-size:12px; font-weight:800; color:var(--text); line-height:1.25;
+  display:flex; align-items:center; white-space:normal; word-break:break-word;
+}
+.tl-bar.cont-left{border-top-left-radius:0; border-bottom-left-radius:0; margin-left:0; border-left-width:0;}
+.tl-bar.cont-right{border-top-right-radius:0; border-bottom-right-radius:0; margin-right:0;}
