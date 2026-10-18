@@ -373,8 +373,15 @@ per Doppelklick starten, in dieser Reihenfolge:
    Testserver; der Browser öffnet sich automatisch. Beenden mit Strg+C und der
    Rückfrage mit J.
 3. **3-veroeffentlichen.bat** – fragt nach einer kurzen Beschreibung der
-   Änderung, baut und veröffentlicht die Webseite (`npm run deploy`) und sichert
-   den Quellcode auf GitHub (`git add`, `commit`, `push`).
+   Änderung, prüft per Probe-Build, dass die App fehlerfrei baut, und lädt dann
+   den Stand per `git add`, `commit` und `push` zu GitHub hoch. Die Webseite
+   baut und veröffentlicht anschließend der GitHub-Workflow
+   (`.github/workflows/deploy.yml`) automatisch; unter *Actions* auf GitHub ist
+   der Fortschritt zu sehen (grüner Haken = fertig, ca. 1–2 Minuten). Ein
+   `npm run deploy` ist dafür nicht mehr nötig.
+
+**Einmalige Voraussetzung:** In den GitHub-Repository-Einstellungen unter
+*Settings → Pages → Source* muss **GitHub Actions** eingestellt sein.
 
 Voraussetzung ist wie bisher, dass Node.js und Git installiert und bei GitHub
 angemeldet sind.

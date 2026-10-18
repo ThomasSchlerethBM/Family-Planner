@@ -31,22 +31,45 @@ if not defined MSG set "MSG=Update"
 set "MSG=%MSG:"=%"
 
 echo.
-echo [1/2] Baue die App und veroeffentliche die Webseite...
-call npm run deploy
-if errorlevel 1 goto :fehler
+echo [1/2] Pruefe, ob sich die App fehlerfrei bauen laesst...
+call npm run build
+if errorlevel 1 (
+  echo.
+  echo Der Build ist fehlgeschlagen - es wurde NICHTS hochgeladen.
+  goto :fehler
+)
 
 echo.
-echo [2/2] Sichere den Quellcode auf GitHub...
+echo [2/2] Lade den Stand zu GitHub hoch...
 git add .
 git commit -m "%MSG%"
 git push
-if errorlevel 1 goto :fehler
+if errorlevel 1 (
+  echo.
+  echo Push abgelehnt - auf GitHub liegen Aenderungen, die hier fehlen.
+  echo Versuche, sie automatisch zusammenzufuehren...
+  git pull --no-rebase --no-edit
+  if errorlevel 1 (
+    git merge --abort >nul 2>nul
+    echo.
+    echo Automatisches Zusammenfuehren ist nicht moeglich, weil sich Dateien
+    echo auf GitHub und hier unterschiedlich geaendert haben.
+    echo Es wurde nichts veraendert. Bitte Screenshot an Claude schicken.
+    goto :fehler
+  )
+  git push
+  if errorlevel 1 goto :fehler
+)
 
 echo.
 echo ================================================
-echo  FERTIG. In 1-2 Minuten ist die Seite aktuell:
+echo  FERTIG. GitHub baut und veroeffentlicht die Seite jetzt selbst.
+echo.
+echo  Fortschritt (gruener Haken = fertig, dauert ca. 1-2 Minuten):
+echo  https://github.com/ThomasSchlerethBM/Family-Planner/actions
+echo.
+echo  Danach ist die Seite aktuell - mit Strg+Shift+R neu laden:
 echo  https://thomasschlerethbm.github.io/Family-Planner/
-echo  Dort mit Strg+Shift+R neu laden.
 echo ================================================
 pause
 exit /b 0
