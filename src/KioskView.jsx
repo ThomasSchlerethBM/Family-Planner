@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { dkey, sameDay, addDays, startOfWeek, startOfMonth, fmtLabelDay, fmtLabelWeek, fmtLabelMonth, DOW, completionKey } from './dateUtils';
 import { removeItem, setItem, pushItem } from './db';
+import { logAction } from './activityLog';
 import { groupByTimeOfDay } from './timeOfDay';
-import { taskOccursOn, eventOccursOn, eventColor, expandTaskAssignments, reassignmentKey } from './occurrence';
+import { taskOccursOn, eventOccursOn, eventColor, isMultiDay, expandTaskAssignments, reassignmentKey } from './occurrence';
 import Timeline, { RESOLUTIONS } from './Timeline.jsx';
 import TimeWindowControl from './TimeWindowControl.jsx';
 import EventDetailsModal from './EventDetailsModal.jsx';
@@ -61,7 +62,7 @@ export default function KioskView({ people: allPeople, events, tasks, completion
     return !filterIds || !e.personIds || e.personIds.length === 0 || e.personIds.some((id) => filterIds.includes(id));
   }
   function eventsOnDate(dt) {
-    return events.filter((e) => eventOccursOn(e, dt) && eventVisible(e)).map((e) => ({ ...e, color: eventColor(e, personColor) }));
+    return events.filter((e) => eventOccursOn(e, dt) && eventVisible(e)).map((e) => ({ ...e, color: eventColor(e, personColor), multiDay: isMultiDay(e) }));
   }
   function buildWeatherByDate(dts) {
     if (!weatherHourly) return null;
@@ -75,8 +76,18 @@ export default function KioskView({ people: allPeople, events, tasks, completion
 
   function applyReassignment(taskId, originalPersonId, targetPersonId) {
     const rkey = reassignmentKey(taskId, key, originalPersonId);
-    if (targetPersonId === originalPersonId) removeItem('taskReassignments', rkey);
-    else setItem('taskReassignments', rkey, { newPersonId: targetPersonId });
+    const title = tasks.find((t) => t.id === taskId)?.title || 'Aufgabe';
+    const currentTarget = (reassignments || []).find((r) => r.id === rkey)?.newPersonId || originalPersonId;
+    if (targetPersonId === currentTarget) return; // nothing changes
+    if (targetPersonId === originalPersonId) {
+      removeItem('taskReassignments', rkey);
+      logAction({ type: 'task_reassign_reset', personId: originalPersonId, personName: personName(originalPersonId), label: title,
+        details: `zurück an ${personName(originalPersonId)}`, dateKey: key }, 'kiosk');
+    } else {
+      setItem('taskReassignments', rkey, { newPersonId: targetPersonId });
+      logAction({ type: 'task_reassigned', personId: targetPersonId, personName: personName(targetPersonId), label: title,
+        details: `von ${personName(currentTarget)} an ${personName(targetPersonId)}`, dateKey: key }, 'kiosk');
+    }
   }
   function handleDrop(targetPersonId) {
     if (!dragging) return;
@@ -92,8 +103,15 @@ export default function KioskView({ people: allPeople, events, tasks, completion
   function toggleTask(task, personId) {
     const ckey = completionKey(task.id, personId, key);
     const existing = completions.find((c) => c.id === ckey);
-    if (existing) removeItem('completions', ckey);
-    else setItem('completions', ckey, { taskId: task.id, personId, dateKey: key, points: task.points });
+    const ts = Date.now();
+    const base = { personId, personName: personName(personId), label: task.title, dateKey: key, refId: ckey, ts };
+    if (existing) {
+      removeItem('completions', ckey);
+      logAction({ ...base, type: 'task_undone', points: -(existing.points || 0) }, 'kiosk');
+    } else {
+      setItem('completions', ckey, { taskId: task.id, personId, dateKey: key, points: task.points, ts });
+      logAction({ ...base, type: 'task_done', points: task.points }, 'kiosk');
+    }
   }
   function pointsBalance(personId) {
     const earned = completions.filter((c) => c.personId === personId).reduce((s, c) => s + c.points, 0);
@@ -102,7 +120,9 @@ export default function KioskView({ people: allPeople, events, tasks, completion
     return earned - spent + adjusted;
   }
   function redeem(reward, personId) {
-    pushItem('redemptions', { personId, cost: reward.cost, name: reward.name, ts: Date.now() });
+    const ts = Date.now();
+    const refId = pushItem('redemptions', { personId, cost: reward.cost, name: reward.name, ts });
+    logAction({ type: 'points_redeemed', personId, personName: personName(personId), label: reward.name, points: -reward.cost, refId, ts }, 'kiosk');
   }
 
   // ---- build the day list for the Timeline (Tag = 1 Spalte, Woche = 7 Spalten) ----

@@ -54,6 +54,12 @@ mehrerer Kinder nebeneinander gut vergleichen.
   nebeneinander statt sauber untereinander dargestellt werden. Bereits
   bestehende Termine mit ungenauer Endzeit einmalig im Admin-Modus öffnen und
   die Endzeit korrigieren, dann verschwindet die Überschneidung
+- **Zeitgenaue Höhe**: Ein Termin-Block ist immer exakt so hoch wie seine
+  Dauer (ein Termin bis 13:00 Uhr endet auch optisch um 13:00 Uhr). Damit
+  lange Titel trotzdem lesbar bleiben, nutzen Termine freie Nachbarspalten
+  (nur wirklich parallele Termine teilen sich die Breite), Titel werden
+  automatisch getrennt (z. B. "Förder-unterricht"), und der volle Titel
+  erscheint beim Darüberfahren mit der Maus sowie im Detail-Fenster
 - **Termin-Details per Klick**: Auf einen Termin in der Zeitleiste oder
   Monatsansicht klicken zeigt (auch ohne Admin-Rechte) ein Detail-Fenster mit
   groß dargestelltem Titel, vollständiger Start- **und** Endzeit, Personen,
@@ -71,6 +77,16 @@ mehrerer Kinder nebeneinander gut vergleichen.
   mehrstündige entsprechend höher, und Ort sowie Beschreibung werden im
   Detail-Fenster angezeigt (HTML-Formatierung der Google-Beschreibung wird
   dabei automatisch entfernt)
+- **Mehrtägige Termine**: Termine, die in Google Kalender über mehrere Tage
+  gehen (ganztägig oder mit Uhrzeit, z. B. ein Workshop von Mo bis Mi),
+  werden jetzt mit Start- und Enddatum übernommen und als durchgehender Balken
+  über alle betroffenen Tage dargestellt (Zeile "Mehrtägig" oberhalb des
+  Zeitrasters, wie in Google Kalender). Beginnt oder endet ein Termin
+  außerhalb der sichtbaren Woche, zeigt ein ◀ bzw. ▶ im Balken, dass er
+  weiterläuft. In der Monatsansicht erscheint der Termin an jedem Tag seines
+  Zeitraums, das Detail-Fenster nennt den kompletten Zeitraum. Beim manuellen
+  Anlegen gibt es dafür das neue Feld "Enddatum (optional)". Bereits
+  importierte Termine bekommen das Enddatum beim nächsten Sync (🔄)
 - Die Aufgaben-Darstellung (Nur Aufgaben / Beides) bleibt wie bisher als
   kompakte Liste unterhalb bzw. daneben bestehen, da Aufgaben keine exakte
   Uhrzeit haben (nur Morgens/Mittags/Abends)
@@ -102,6 +118,39 @@ dargestellt.
 - Eigenes App-Icon für Homescreen/Manifest
 - Design im Stil von Structured.app: helles Theme, farbige abgerundete Karten,
   Zeitleisten-Optik in der Tagesansicht
+
+## Aktionsprotokoll (Statistik → Reiter "Protokoll")
+
+Admin-Modus → **📊 Statistik** → Reiter **Protokoll**. Hier steht jede Aktion
+mit exaktem Zeitstempel (Datum, Uhrzeit auf die Sekunde), nicht nur die Anzahl
+pro Person. Protokolliert werden:
+
+- **Aufgaben:** erledigt (Haken gesetzt) und Haken wieder entfernt – jeweils mit
+  Person, Aufgabe, Punkten und dem Tag, für den sie gilt
+- **Umverteilungen:** Aufgabe an eine andere Person gegeben oder die
+  Umverteilung wieder aufgehoben ("von Tim an Thomas")
+- **Punkte & Prämien:** eingelöste Prämien und manuelle Punkte-Anpassungen
+- **Verwaltung (Admin):** Termine, Aufgaben und Prämien angelegt/geändert/
+  gelöscht sowie Personen hinzugefügt/umbenannt
+
+Zu jedem Eintrag wird die Quelle angezeigt (**App**, **Kiosk**, bei Verwaltung
+zusätzlich **Admin**). Die Ansicht lässt sich nach **Zeitraum** (Heute /
+7 Tage / 30 Tage / Alles), **Person**, **Aktionsart** und per **Suche**
+filtern, ist nach Tagen gegliedert (mit Tagessumme der Punkte) und lässt sich
+als **CSV-Datei** (Excel, Semikolon-getrennt) exportieren.
+
+**Wichtig zu wissen:**
+- Das Protokoll beginnt mit dem Zeitpunkt, ab dem diese Version läuft. Ältere
+  Datensätze (abgehakte Aufgaben, Punkte-Anpassungen, eingelöste Prämien)
+  werden als **"Altbestand"** mit ergänzt; bei älteren Aufgaben ist nur der Tag
+  bekannt, die Uhrzeit wird dort als "––:––" angezeigt.
+- Es gibt keine Anmeldung pro Person. "Wer" bedeutet daher, **für welche
+  Person** die Aktion gebucht wurde (in dessen Spalte bzw. Zeile), nicht welches
+  Familienmitglied am Gerät saß.
+- Automatische Google-Kalender-Abgleiche werden nicht protokolliert, nur
+  Änderungen, die jemand selbst vornimmt.
+- Angezeigt werden die letzten 3.000 Protokolleinträge; ältere bleiben in der
+  Datenbank erhalten.
 
 ## Punkte-Statistik
 
@@ -312,6 +361,29 @@ Sondertermine (mit "G"-Kennzeichen) in allen Ansichten.
 Der bisherige ICS-Text-Import bleibt als Alternative bestehen, z. B. für
 Kalender, die nicht über ein Google-Konto laufen.
 
+## Windows-Skripte (Doppelklick statt Befehle tippen)
+
+Im Projektordner liegen drei Skripte, die den üblichen Ablauf ersetzen. Einfach
+per Doppelklick starten, in dieser Reihenfolge:
+
+1. **1-update-aus-zip.bat** – nimmt die neueste `family-planner*.zip` aus dem
+   Downloads-Ordner und kopiert die neuen Dateien in den Projektordner
+   (`node_modules`, `.git` und `dist` bleiben unangetastet).
+2. **2-lokal-testen.bat** – installiert bei Bedarf die Pakete und startet den
+   Testserver; der Browser öffnet sich automatisch. Beenden mit Strg+C und der
+   Rückfrage mit J.
+3. **3-veroeffentlichen.bat** – fragt nach einer kurzen Beschreibung der
+   Änderung, baut und veröffentlicht die Webseite (`npm run deploy`) und sichert
+   den Quellcode auf GitHub (`git add`, `commit`, `push`).
+
+Voraussetzung ist wie bisher, dass Node.js und Git installiert und bei GitHub
+angemeldet sind.
+
+**Admin-PIN:** Sie steht in `src/localConfig.js`, nicht mehr in `App.jsx`.
+`1-update-aus-zip.bat` überschreibt diese Datei nicht, solange sie auf dem
+Rechner existiert – die eigene PIN bleibt bei Updates also erhalten. Wer
+Dateien von Hand kopiert, sollte `src/localConfig.js` auslassen.
+
 ## 1. Lokal einrichten
 
 ```bash
@@ -343,7 +415,7 @@ ausreichend. Für mehr Schutz später Firebase Auth ergänzen.
 
 ## 3. Admin-PIN setzen
 
-In `src/App.jsx` ganz oben:
+In `src/localConfig.js`:
 
 ```js
 const ADMIN_PIN = '1234';

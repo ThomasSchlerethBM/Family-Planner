@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { pushItem } from './db';
+import { logAction } from './activityLog';
 
 export default function PointAdjuster({ people }) {
   const [personId, setPersonId] = useState(people[0]?.id || '');
@@ -8,12 +9,12 @@ export default function PointAdjuster({ people }) {
 
   function apply(sign) {
     if (!personId || !amount) return;
-    pushItem('adjustments', {
-      personId,
-      delta: sign * Math.abs(Number(amount) || 0),
-      reason: reason.trim() || (sign > 0 ? 'Bonus' : 'Abzug'),
-      ts: Date.now(),
-    });
+    const ts = Date.now();
+    const delta = sign * Math.abs(Number(amount) || 0);
+    const text = reason.trim() || (sign > 0 ? 'Bonus' : 'Abzug');
+    const refId = pushItem('adjustments', { personId, delta, reason: text, ts });
+    logAction({ type: 'points_adjusted', personId, personName: people.find((p) => p.id === personId)?.name || null,
+      label: text, points: delta, refId, admin: true, ts });
     setReason('');
   }
 

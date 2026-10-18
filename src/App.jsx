@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { listenList, listenValue, pushItem, setItem, updateItem, removeItem, seedIfEmpty } from './db';
+import { listenList, listenListLimited, listenValue, pushItem, setItem, updateItem, removeItem, seedIfEmpty } from './db';
+import { logAction } from './activityLog';
+import { ADMIN_PIN } from './localConfig';
 import { SEED_MEMBERS, SEED_EVENTS, SEED_TASKS, SEED_REWARDS, SEED_KIOSK_PRESETS } from './seedData';
 import {
   DOW, MONTHS, dkey, sameDay, addDays, startOfWeek, startOfMonth,
@@ -11,7 +13,7 @@ import MembersManager from './MembersManager.jsx';
 import GoogleCalendarPanel from './GoogleCalendarPanel.jsx';
 import PointAdjuster from './PointAdjuster.jsx';
 import { groupByTimeOfDay } from './timeOfDay';
-import { taskOccursOn, eventOccursOn, weekdaysSummary, WEEKDAY_PRESETS, eventColor } from './occurrence';
+import { taskOccursOn, eventOccursOn, weekdaysSummary, WEEKDAY_PRESETS, eventColor, isMultiDay } from './occurrence';
 import WeekdayPicker from './WeekdayPicker.jsx';
 import Timeline, { RESOLUTIONS } from './Timeline.jsx';
 import TimeWindowControl from './TimeWindowControl.jsx';
@@ -20,10 +22,6 @@ import { fetchHourlyWeather, buildDayWeather } from './weather.js';
 import EventDetailsModal from './EventDetailsModal.jsx';
 import StatisticsModal from './StatisticsModal.jsx';
 
-// Ändere diese PIN! Sie schaltet den Bearbeiten-Modus frei
-// (Termine/Aufgaben/Prämien anlegen, löschen). Zum Abhaken und
-// Einlösen braucht niemand die PIN.
-const ADMIN_PIN = '1234';
 
 const today = new Date();
 const isKioskUrl = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('kiosk') === '1';
@@ -38,6 +36,7 @@ export default function App() {
   const [adjustments, setAdjustments] = useState([]);
   const [kioskPresets, setKioskPresets] = useState([]);
   const [reassignments, setReassignments] = useState([]);
+  const [activityLog, setActivityLog] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -89,7 +88,8 @@ export default function App() {
     const un8 = listenList('kioskPresets', setKioskPresets);
     const un9 = listenValue('settings/weather', setWeatherLocation);
     const un10 = listenList('taskReassignments', setReassignments);
-    return () => { un1(); un2(); un3(); un4(); un5(); un6(); un7(); un8(); un9(); un10(); };
+    const un11 = listenListLimited('activityLog', 3000, setActivityLog);
+    return () => { un1(); un2(); un3(); un4(); un5(); un6(); un7(); un8(); un9(); un10(); un11(); };
   }, []);
 
   // fetch the hourly forecast once we know where "home" is, and refresh it
@@ -128,7 +128,7 @@ export default function App() {
   const visibleTasks = useMemo(() => tasks.filter(visibleForTask), [tasks, selectedPersons]);
 
   function eventsOn(dateObj) {
-    return visibleEvents.filter((e) => eventOccursOn(e, dateObj)).map((e) => ({ ...e, color: eventColor(e, personColor) }));
+    return visibleEvents.filter((e) => eventOccursOn(e, dateObj)).map((e) => ({ ...e, color: eventColor(e, personColor), multiDay: isMultiDay(e) }));
   }
   function tasksOn(dateObj) { return visibleTasks.filter((t) => taskOccursOn(t, dateObj)); }
   function weatherFor(dt) { return buildDayWeather(weatherHourly, dkey(dt)); }
@@ -145,8 +145,15 @@ export default function App() {
     const key = dkey(dateObj);
     const ckey = completionKey(task.id, personId, key);
     const existing = completions.find((c) => c.id === ckey);
-    if (existing) removeItem('completions', ckey);
-    else setItem('completions', ckey, { taskId: task.id, personId, dateKey: key, points: task.points });
+    const ts = Date.now();
+    const base = { personId, personName: personObj(personId)?.name || null, label: task.title, dateKey: key, refId: ckey, admin: isAdmin, ts };
+    if (existing) {
+      removeItem('completions', ckey);
+      logAction({ ...base, type: 'task_undone', points: -(existing.points || 0) });
+    } else {
+      setItem('completions', ckey, { taskId: task.id, personId, dateKey: key, points: task.points, ts });
+      logAction({ ...base, type: 'task_done', points: task.points });
+    }
   }
 
   function pointsBalance(personId) {
@@ -157,8 +164,17 @@ export default function App() {
   }
   function redeem(reward, personId) {
     if (pointsBalance(personId) < reward.cost) return;
-    pushItem('redemptions', { personId, cost: reward.cost, name: reward.name, ts: Date.now() });
+    const ts = Date.now();
+    const refId = pushItem('redemptions', { personId, cost: reward.cost, name: reward.name, ts });
+    logAction({ type: 'points_redeemed', personId, personName: personObj(personId)?.name || null, label: reward.name, points: -reward.cost, refId, admin: isAdmin, ts });
   }
+
+  // ---- admin actions that should show up in the activity log ----
+  function adminLog(type, label, details) {
+    logAction({ type, label, details: details || null, admin: true });
+  }
+  function deleteTask(t) { removeItem('tasks', t.id); adminLog('task_deleted', t.title); }
+  function deleteReward(r) { removeItem('rewards', r.id); adminLog('reward_deleted', r.name, `${r.cost} Punkte`); }
 
   function step(delta) {
     if (period === 'day') setCurrent((c) => addDays(c, delta));
@@ -248,7 +264,7 @@ export default function App() {
                         {t.title} <span style={{ color: 'var(--chalk-faint)', fontWeight: 400 }}>· {person.name}</span>
                       </span>
                       <span className="pts">+{t.points}</span>
-                      {isAdmin && <button className="row-del" onClick={() => removeItem('tasks', t.id)}>✕</button>}
+                      {isAdmin && <button className="row-del" onClick={() => deleteTask(t)}>✕</button>}
                     </div>
                   );
                 })}
@@ -507,7 +523,7 @@ export default function App() {
               {isAdmin && <button className="icon-btn" style={{ padding: '5px 10px', fontSize: 11 }}
                 onClick={() => { setEditingReward(null); setShowRewardModal(true); }}>+ Neu</button>}
             </h3>
-            <RewardRedeemer people={people} rewards={rewards} pointsBalance={pointsBalance} redeem={redeem} isAdmin={isAdmin}
+            <RewardRedeemer people={people} rewards={rewards} pointsBalance={pointsBalance} redeem={redeem} isAdmin={isAdmin} onDelete={deleteReward}
               onEdit={(r) => { setEditingReward(r); setShowRewardModal(true); }} />
           </div>
 
@@ -524,34 +540,36 @@ export default function App() {
       {showEventModal && <EventModal people={people} existing={editingEvent} allEvents={events}
         onClose={() => { setShowEventModal(false); setEditingEvent(null); }}
         onSave={(ev) => {
-          if (editingEvent) updateItem('events', editingEvent.id, ev);
-          else pushItem('events', ev);
+          const when = ev.recurrence === 'weekly' ? 'wöchentlich' : (ev.date ? `am ${ev.date}${ev.endDate ? ' bis ' + ev.endDate : ''}` : '');
+          if (editingEvent) { updateItem('events', editingEvent.id, ev); adminLog('event_updated', ev.title, when); }
+          else { pushItem('events', ev); adminLog('event_created', ev.title, when); }
           setShowEventModal(false); setEditingEvent(null);
         }}
         onExclude={editingEvent && editingEvent.source === 'google' ? () => {
           setItem('googleExcluded', editingEvent.id, true);
           removeItem('events', editingEvent.id);
+          adminLog('event_deleted', editingEvent.title, 'aus Google-Sync ausgeschlossen');
           setShowEventModal(false); setEditingEvent(null);
         } : null}
       />}
       {showTaskModal && <TaskModal people={people} existing={editingTask}
         onClose={() => { setShowTaskModal(false); setEditingTask(null); }}
         onSave={(t) => {
-          if (editingTask) updateItem('tasks', editingTask.id, t);
-          else pushItem('tasks', t);
+          if (editingTask) { updateItem('tasks', editingTask.id, t); adminLog('task_updated', t.title, `${t.points} Punkte`); }
+          else { pushItem('tasks', t); adminLog('task_created', t.title, `${t.points} Punkte`); }
           setShowTaskModal(false); setEditingTask(null);
         }} />}
       {showImport && <ImportModal icsText={icsText} setIcsText={setIcsText} onClose={() => setShowImport(false)} onImport={doImport} />}
       {showRewardModal && <RewardModal existing={editingReward}
         onClose={() => { setShowRewardModal(false); setEditingReward(null); }}
         onSave={(r) => {
-          if (editingReward) updateItem('rewards', editingReward.id, r);
-          else pushItem('rewards', r);
+          if (editingReward) { updateItem('rewards', editingReward.id, r); adminLog('reward_updated', r.name, `${r.cost} Punkte`); }
+          else { pushItem('rewards', r); adminLog('reward_created', r.name, `${r.cost} Punkte`); }
           setShowRewardModal(false); setEditingReward(null);
         }} />}
       {showPinModal && <PinModal onClose={() => setShowPinModal(false)} onSubmit={tryUnlockAdmin} />}
       {detailEvent && <EventDetailsModal event={detailEvent} people={people} onClose={() => setDetailEvent(null)} />}
-      {showStatsModal && <StatisticsModal people={people} tasks={tasks} completions={completions} adjustments={adjustments} onClose={() => setShowStatsModal(false)} />}
+      {showStatsModal && <StatisticsModal people={people} tasks={tasks} completions={completions} adjustments={adjustments} redemptions={redemptions} activityLog={activityLog} onClose={() => setShowStatsModal(false)} />}
       {showKioskModal && <KioskQrModal onClose={() => setShowKioskModal(false)} people={people} kioskPresets={kioskPresets}
         onSavePreset={(label, personIds) => pushItem('kioskPresets', { label, personIds })}
         onDeletePreset={(id) => removeItem('kioskPresets', id)} />}
@@ -642,7 +660,7 @@ function PinModal({ onClose, onSubmit }) {
   );
 }
 
-function RewardRedeemer({ people, rewards, pointsBalance, redeem, isAdmin, onEdit }) {
+function RewardRedeemer({ people, rewards, pointsBalance, redeem, isAdmin, onEdit, onDelete }) {
   const [personId, setPersonId] = useState('');
   useEffect(() => { if (!personId && people.length) setPersonId(people[0].id); }, [people]);
   if (!people.length) return <div className="empty-note">Noch keine Familienmitglieder.</div>;
@@ -659,7 +677,7 @@ function RewardRedeemer({ people, rewards, pointsBalance, redeem, isAdmin, onEdi
           <div className="rname" style={{ cursor: isAdmin ? 'pointer' : 'default' }} onClick={() => isAdmin && onEdit(r)}>{r.name}</div>
           <div className="rcost mono">{r.cost}</div>
           <button disabled={pointsBalance(personId) < r.cost} onClick={() => redeem(r, personId)}>Einlösen</button>
-          {isAdmin && <button className="row-del" onClick={() => removeItem('rewards', r.id)}>✕</button>}
+          {isAdmin && <button className="row-del" onClick={() => onDelete(r)}>✕</button>}
         </div>
       ))}
     </div>
@@ -702,8 +720,11 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
   const [title, setTitle] = useState(existing?.title || '');
   const [date, setDate] = useState(existing?.date || dkey(new Date()));
   const [time, setTime] = useState(existing?.time || '');
+  const [endDate, setEndDate] = useState(existing?.endDate || '');
   const [endTime, setEndTime] = useState(
-    existing?.time ? addMinutesToTime(existing.time, existing?.durationMinutes ?? 60) : ''
+    existing?.endDate && existing?.endTime && existing.endTime !== '24:00'
+      ? existing.endTime
+      : existing?.time ? addMinutesToTime(existing.time, existing?.durationMinutes ?? 60) : ''
   );
   const [type, setType] = useState(existing?.type || 'special');
   const [personIds, setPersonIds] = useState(existing?.personIds || []);
@@ -713,7 +734,8 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
   const [description, setDescription] = useState(existing?.description || '');
   const [location, setLocation] = useState(existing?.location || '');
   const isGoogle = existing?.source === 'google';
-  const timeInvalid = time && endTime && diffMinutes(time, endTime) <= 0;
+  const multiDay = recurrence === 'once' && !!endDate && endDate > date;
+  const timeInvalid = !multiDay && time && endTime && diffMinutes(time, endTime) <= 0;
   function toggle(id) { setPersonIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); }
   function handleStartChange(v) {
     setTime(v);
@@ -759,6 +781,12 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
           {time && <div><label>Endzeit</label><input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></div>}
         </div>
         {timeInvalid && <div className="help-text" style={{ color: 'var(--danger)', marginTop: -6, marginBottom: 10 }}>Endzeit muss nach der Startzeit liegen.</div>}
+        {recurrence === 'once' && (
+          <div className="field">
+            <label>Enddatum (optional, für mehrtägige Termine)</label>
+            <input type="date" value={endDate} min={date} onChange={(e) => setEndDate(e.target.value)} />
+          </div>
+        )}
         {recurrence === 'weekly' && (
           <div className="field">
             <label>An welchen Tagen? (z. B. Schwimmen dienstags &amp; donnerstags)</label>
@@ -802,7 +830,9 @@ function EventModal({ people, onClose, onSave, onExclude, existing, allEvents })
             onClick={() => onSave({
               title, time, type, personIds, source: existing?.source || 'local', manualOverride: locked,
               recurrence, date: recurrence === 'once' ? date : null, weekdays: recurrence === 'weekly' ? weekdays : null,
-              durationMinutes: time ? (endTime ? diffMinutes(time, endTime) : 60) : null,
+              endDate: multiDay ? endDate : null,
+              endTime: multiDay && time ? (endTime || null) : null,
+              durationMinutes: time && !multiDay ? (endTime ? diffMinutes(time, endTime) : 60) : null,
               description: description.trim() || null,
               location: location.trim() || null,
             })}>

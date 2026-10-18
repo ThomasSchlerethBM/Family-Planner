@@ -40,6 +40,14 @@ function toLocalDateParts(gEvent, field) {
   return { date: '', time: '', ms: null };
 }
 
+// Shifts a 'YYYY-MM-DD' key by whole days (local calendar arithmetic).
+function shiftDateKey(key, delta) {
+  const [y, m, d] = key.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + delta);
+  const pad = (n) => (n < 10 ? '0' + n : '' + n);
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+}
+
 export default function GoogleCalendarPanel({ people }) {
   const [connected, setConnected] = useState({});
   const [syncing, setSyncing] = useState({});
@@ -87,11 +95,38 @@ export default function GoogleCalendarPanel({ people }) {
 
         const { date, time, ms: startMs } = toLocalDateParts(it, 'start');
         if (!date) continue;
-        const { ms: endMs } = toLocalDateParts(it, 'end');
-        const durationMinutes = (startMs && endMs && endMs > startMs) ? Math.round((endMs - startMs) / 60000) : null;
+        const endParts = toLocalDateParts(it, 'end');
+        const endMs = endParts.ms;
+
+        // Multi-day handling: store the last day (inclusive) so the event can be
+        // shown on every day it covers, like Google Calendar does.
+        let endDate = null;
+        let endTime = null;
+        let durationMinutes = null;
+        if (it.start && it.start.date) {
+          // all-day event: Google's end.date is exclusive (the day AFTER the last day)
+          if (it.end && it.end.date) {
+            const lastDay = shiftDateKey(it.end.date, -1);
+            if (lastDay > date) endDate = lastDay;
+          }
+        } else if (startMs && endMs && endMs > startMs) {
+          if (endParts.date > date) {
+            if (endParts.time === '00:00') {
+              // ends exactly at midnight -> belongs to the previous day
+              const lastDay = shiftDateKey(endParts.date, -1);
+              if (lastDay > date) { endDate = lastDay; endTime = '24:00'; }
+            } else {
+              endDate = endParts.date;
+              endTime = endParts.time;
+            }
+          }
+          if (!endDate) durationMinutes = Math.round((endMs - startMs) / 60000);
+        }
+
         await setItem('events', id, {
           title: it.summary || '(ohne Titel)',
           date, time,
+          endDate, endTime,
           durationMinutes,
           description: stripHtml(it.description),
           location: it.location || null,

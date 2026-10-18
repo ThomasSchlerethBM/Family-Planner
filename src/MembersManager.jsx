@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { updateItem, pushItem } from './db';
+import { logAction } from './activityLog';
 
 const PRESET_COLORS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)', 'var(--coral)', 'var(--gold)'];
 
@@ -18,7 +19,10 @@ export default function MembersManager({ people }) {
   function save(id) {
     const name = (drafts[id] || '').trim();
     if (!name) return;
+    const oldName = people.find((p) => p.id === id)?.name;
+    if (oldName === name) return;
     updateItem('members', id, { name });
+    logAction({ type: 'member_renamed', personId: id, personName: name, label: name, details: `${oldName} → ${name}`, admin: true });
   }
 
   function addMember() {
@@ -26,7 +30,8 @@ export default function MembersManager({ people }) {
     if (!name) return;
     const usedColors = people.map((p) => p.color);
     const color = PRESET_COLORS.find((c) => !usedColors.includes(c)) || PRESET_COLORS[people.length % PRESET_COLORS.length];
-    pushItem('members', { name, color });
+    const newId = pushItem('members', { name, color });
+    logAction({ type: 'member_added', personId: newId, personName: name, label: name, admin: true });
     setNewName('');
   }
 

@@ -1,4 +1,5 @@
 import { weekdaysSummary } from './occurrence';
+import { DOW } from './dateUtils';
 
 function addMinutes(time, minutes) {
   const [h, m] = time.split(':').map(Number);
@@ -8,8 +9,23 @@ function addMinutes(time, minutes) {
   return `${hh < 10 ? '0' : ''}${hh}:${mm < 10 ? '0' : ''}${mm}`;
 }
 
+function fmtDay(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${DOW[(dt.getDay() + 6) % 7]} ${d}.${m}.`;
+}
+
+function timeLabel(event) {
+  const multi = event.recurrence !== 'weekly' && event.date && event.endDate && event.endDate > event.date;
+  if (multi) {
+    if (event.time) return `${fmtDay(event.date)} ${event.time} – ${fmtDay(event.endDate)} ${event.endTime || ''} Uhr`;
+    return `${fmtDay(event.date)} – ${fmtDay(event.endDate)} (ganztägig)`;
+  }
+  if (!event.time) return 'Ohne feste Uhrzeit';
+  return `${event.time} – ${addMinutes(event.time, event.durationMinutes || 60)} Uhr`;
+}
+
 export default function EventDetailsModal({ event, people, onClose }) {
-  const endTime = event.time ? addMinutes(event.time, event.durationMinutes || 60) : null;
   const assigned = (event.personIds || []).map((id) => people.find((p) => p.id === id)).filter(Boolean);
   return (
     <div className="modal-bg" onClick={onClose}>
@@ -18,7 +34,7 @@ export default function EventDetailsModal({ event, people, onClose }) {
         <div className="kiosk-detail-title" style={{ color: event.color }}>{event.title}</div>
         <div className="kiosk-detail-row">
           <span className="kiosk-detail-icon">🕐</span>
-          <span>{event.time ? `${event.time} – ${endTime} Uhr` : 'Ohne feste Uhrzeit'}</span>
+          <span>{timeLabel(event)}</span>
         </div>
         {event.recurrence === 'weekly' && (
           <div className="kiosk-detail-row">

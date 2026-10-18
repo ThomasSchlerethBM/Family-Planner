@@ -31,12 +31,20 @@ export function taskOccursOn(task, dateObj) {
 }
 
 // An event is either a one-off on a specific date, or weekly on chosen weekdays.
+// True for one-off events that run over more than one calendar day
+// (Start date + inclusive end date).
+export function isMultiDay(event) {
+  return event.recurrence !== 'weekly' && !!event.date && !!event.endDate && event.endDate > event.date;
+}
+
 export function eventOccursOn(event, dateObj) {
   if (event.recurrence === 'weekly') {
     if (!event.weekdays || event.weekdays.length === 0) return false;
     return event.weekdays.includes(dateObj.getDay());
   }
-  return event.date === dkey(dateObj);
+  const key = dkey(dateObj);
+  if (isMultiDay(event)) return key >= event.date && key <= event.endDate;
+  return event.date === key;
 }
 
 export function weekdaysSummary(weekdays) {

@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { ref, onValue, push, set, remove, update, get } from 'firebase/database';
+import { ref, onValue, push, set, remove, update, get, query, orderByKey, limitToLast } from 'firebase/database';
 
 // Subscribes to a single-object path (e.g. "settings/weather") and calls back
 // with its raw value (or null if absent) - unlike listenList, does not
@@ -14,6 +14,16 @@ export function listenValue(path, callback) {
 export function listenList(path, callback) {
   const r = ref(db, path);
   return onValue(r, (snap) => {
+    const val = snap.val() || {};
+    callback(Object.entries(val).map(([id, v]) => ({ id, ...v })));
+  });
+}
+
+// Like listenList, but only the most recent `limit` entries (push keys are
+// chronological), so a log that grows for years doesn't slow the app down.
+export function listenListLimited(path, limit, callback) {
+  const q = query(ref(db, path), orderByKey(), limitToLast(limit));
+  return onValue(q, (snap) => {
     const val = snap.val() || {};
     callback(Object.entries(val).map(([id, v]) => ({ id, ...v })));
   });
