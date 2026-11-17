@@ -464,3 +464,17 @@ npm run dev
 
 - Firebase Auth statt offener Schreibrechte
 - Zeitlich präzise Minuten-Timeline (aktuell: Reihenfolge nach Uhrzeit, aber ohne exakte Positionierung nach Dauer)
+
+## Google-Kalender: Verbindungsstatus mit Grund
+
+Unter jeder Person in der Karte „Google-Kalender“ steht jetzt direkt, was beim
+Verbinden passiert ist – ohne Browser-Konsole:
+
+- **Anmeldefenster wird geöffnet …** – während Google das Fenster öffnet
+- **Pop-up blockiert** – Browser erlaubt Pop-ups für diese Seite nicht
+- **Anmeldefenster geschlossen** – Fenster wurde vor dem Abschluss zugemacht
+- **Zugriff nicht erlaubt** – Häkchen für „Kalender lesen“ fehlt oder falsches Konto gewählt
+- **Verbunden. Termine werden geladen …** – Erfolg; die Karte zeigt danach „Trennen“
+
+Der Google-Fehlercode wird jeweils in Klammern mit angezeigt, damit er bei
+Rückfragen genannt werden kann.

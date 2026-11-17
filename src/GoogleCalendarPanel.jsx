@@ -53,6 +53,10 @@ export default function GoogleCalendarPanel({ people }) {
   const [syncing, setSyncing] = useState({});
   const [lastSync, setLastSync] = useState({});
   const [errors, setErrors] = useState({});
+  // Verbindungsstatus pro Person: { kind: 'info'|'error'|'ok', text }
+  const [status, setStatus] = useState({});
+  const setPersonStatus = (personId, kind, text) =>
+    setStatus((st) => ({ ...st, [personId]: text ? { kind, text } : null }));
 
   useEffect(() => {
     const initial = {};
@@ -68,8 +72,13 @@ export default function GoogleCalendarPanel({ people }) {
       if (!token) {
         // try a silent refresh (no popup) before giving up
         await new Promise((resolve) => {
-          refreshGoogleToken(personId, (t) => { token = t; resolve(); });
-          setTimeout(resolve, 3000);
+          let done = false;
+          const finish = () => { if (!done) { done = true; resolve(); } };
+          refreshGoogleToken(personId, {
+            onToken: (t) => { token = t; finish(); },
+            onError: (msg) => { setPersonStatus(personId, 'error', msg); finish(); },
+          });
+          setTimeout(finish, 4000);
         });
       }
       if (!token) throw new Error('EXPIRED');
@@ -144,12 +153,15 @@ export default function GoogleCalendarPanel({ people }) {
       for (const s of stale) await removeItem('events', s.id);
 
       setLastSync((s) => ({ ...s, [personId]: Date.now() }));
+      setPersonStatus(personId, 'ok', null);
     } catch (err) {
       if (err.message === 'EXPIRED') {
         setErrors((e) => ({ ...e, [personId]: 'Anmeldung abgelaufen – bitte neu verbinden.' }));
         setConnected((c) => ({ ...c, [personId]: false }));
+        setPersonStatus(personId, 'error', 'Die gespeicherte Anmeldung ist abgelaufen oder ungültig. Bitte „Verbinden“ drücken.');
       } else {
         setErrors((e) => ({ ...e, [personId]: 'Sync fehlgeschlagen.' }));
+        setPersonStatus(personId, 'error', 'Termine konnten nicht geladen werden: ' + (err.message || 'unbekannter Fehler'));
       }
     } finally {
       setSyncing((s) => ({ ...s, [personId]: false }));
@@ -167,15 +179,26 @@ export default function GoogleCalendarPanel({ people }) {
   }, [people.length]);
 
   function handleConnect(personId) {
-    connectGoogleCalendar(personId, () => {
-      setConnected((c) => ({ ...c, [personId]: true }));
-      syncPerson(personId);
+    setPersonStatus(personId, 'info', 'Anmeldefenster von Google wird geöffnet …');
+    connectGoogleCalendar(personId, {
+      onStart: () => {},
+      onToken: () => {
+        // Token wurde gespeichert -> Karte auf "Trennen" umschalten
+        setConnected((c) => ({ ...c, [personId]: true }));
+        setPersonStatus(personId, 'info', 'Verbunden. Termine werden geladen …');
+        syncPerson(personId);
+      },
+      onError: (msg) => {
+        setConnected((c) => ({ ...c, [personId]: false }));
+        setPersonStatus(personId, 'error', msg);
+      },
     });
   }
 
   function handleDisconnect(personId) {
     disconnectGoogleCalendar(personId);
     setConnected((c) => ({ ...c, [personId]: false }));
+    setPersonStatus(personId, null, null);
   }
 
   return (
@@ -198,6 +221,11 @@ export default function GoogleCalendarPanel({ people }) {
             </>
           ) : (
             <button className="btn-ghost small" onClick={() => handleConnect(p.id)}>Verbinden</button>
+          )}
+          {status[p.id] && (
+            <div className={'gcal-status gcal-status-' + status[p.id].kind} style={{ flexBasis: '100%', fontSize: 13, marginTop: 4 }}>
+              {status[p.id].text}
+            </div>
           )}
         </div>
       ))}
