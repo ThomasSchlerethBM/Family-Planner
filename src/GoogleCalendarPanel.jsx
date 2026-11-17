@@ -179,6 +179,8 @@ export default function GoogleCalendarPanel({ people }) {
   }, [people.length]);
 
   function handleConnect(personId) {
+    // alte Sync-Fehler (z.B. "Anmeldung abgelaufen") beim neuen Verbinden entfernen
+    setErrors((e) => ({ ...e, [personId]: null }));
     setPersonStatus(personId, 'info', 'Anmeldefenster von Google wird geöffnet …');
     connectGoogleCalendar(personId, {
       onStart: () => {},

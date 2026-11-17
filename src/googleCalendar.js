@@ -31,7 +31,7 @@ function describeAuthError(code, detail) {
       return 'Das Anmeldefenster wurde vom Browser blockiert. Bitte Pop-ups für diese Seite erlauben und erneut auf „Verbinden“ klicken.' + suffix;
     case 'popup_closed':
     case 'popup_closed_by_user':
-      return 'Das Anmeldefenster wurde geschlossen, bevor die Anmeldung abgeschlossen war.' + suffix;
+      return 'Das Anmeldefenster wurde geschlossen, bevor die Anmeldung abgeschlossen war. Bitte erneut auf „Verbinden“ klicken und das Fenster bis zum Ende offen lassen.' + suffix;
     case 'access_denied':
       return 'Google hat den Zugriff nicht erlaubt. Bitte das Häkchen für „Kalender lesen“ setzen und das richtige Google-Konto wählen.' + suffix;
     case 'immediate_failed':
